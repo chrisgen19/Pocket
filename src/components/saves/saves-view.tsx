@@ -9,6 +9,7 @@ import {
   useUpdateBookmark,
 } from '@/features/saves/hooks';
 import { useSavesStore } from '@/features/saves/store';
+import { isApiError } from '@/lib/api-error';
 import { cn } from '@/lib/utils';
 import { AddBookmarkForm, type AddBookmarkFormHandle } from './add-bookmark-form';
 import { BookmarkCard } from './bookmark-card';
@@ -53,8 +54,8 @@ export function SavesView() {
   }, [bookmarks, category, tagFilter]);
 
   const empty = emptyCopy(category, tagFilter);
-  const error = bookmarksQuery.error as Error | null;
-  const unauthorized = error?.message === 'Unauthorized';
+  const error = bookmarksQuery.error;
+  const unauthorized = isApiError(error) && error.status === 401;
 
   return (
     <>
@@ -112,7 +113,7 @@ export function SavesView() {
           ) : error ? (
             <div className="text-center py-20">
               <h3 className="text-lg font-medium text-gray-900">Something went wrong</h3>
-              <p className="mt-1 text-gray-500">{error.message}</p>
+              <p className="mt-1 text-gray-500">{error instanceof Error ? error.message : 'Unknown error'}</p>
             </div>
           ) : visible.length === 0 ? (
             <EmptyState title={empty.title} description={empty.description} />

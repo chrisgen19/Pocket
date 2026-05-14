@@ -15,18 +15,22 @@ export async function PATCH(request: Request, { params }: Ctx) {
   const body = await request.json().catch(() => null);
   const parsed = updateBookmarkSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: 'Invalid input', issues: parsed.error.issues }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Invalid input', issues: parsed.error.issues },
+      { status: 400 },
+    );
   }
 
-  const result = await prisma.bookmark.updateMany({
+  // Atomic update + read in one query to avoid a TOCTOU race where the row is
+  // deleted between updateMany() and a follow-up findUnique().
+  const updated = await prisma.bookmark.updateManyAndReturn({
     where: { id, userId: session.user.id },
     data: parsed.data,
   });
-  if (result.count === 0) {
+  if (updated.length === 0) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
-  const bookmark = await prisma.bookmark.findUnique({ where: { id } });
-  return NextResponse.json(bookmark);
+  return NextResponse.json(updated[0]);
 }
 
 export async function DELETE(_request: Request, { params }: Ctx) {

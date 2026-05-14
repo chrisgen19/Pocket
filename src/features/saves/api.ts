@@ -1,3 +1,4 @@
+import { ApiError } from '@/lib/api-error';
 import type { Bookmark, CreateBookmarkInput, UpdateBookmarkInput } from './types';
 
 type BookmarkDTO = Omit<Bookmark, 'dateAdded'> & { createdAt: string; updatedAt: string };
@@ -20,7 +21,7 @@ function toBookmark(dto: BookmarkDTO): Bookmark {
 async function handle<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body?.error ?? `Request failed (${res.status})`);
+    throw new ApiError(res.status, body?.error ?? `Request failed (${res.status})`);
   }
   return (await res.json()) as T;
 }

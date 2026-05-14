@@ -90,5 +90,6 @@ model Bookmark {
 
   @@index([userId, isArchived])
   @@index([userId, isFavorite])
+  @@index([userId, createdAt(sort: Desc)])
   @@map("bookmarks")
 }
