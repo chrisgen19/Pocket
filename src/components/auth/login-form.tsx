@@ -1,5 +1,6 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
@@ -20,6 +21,7 @@ function sanitizeNext(raw: string | null): string {
 export function LoginForm() {
   const router = useRouter();
   const search = useSearchParams();
+  const qc = useQueryClient();
   const next = sanitizeNext(search.get('next'));
 
   const [email, setEmail] = useState('');
@@ -37,6 +39,10 @@ export function LoginForm() {
         setError(result.error.message ?? 'Sign in failed');
         return;
       }
+      // Drop any user-scoped queries cached from a previous session in this
+      // browser tab so we don't render the previous user's data after a
+      // same-browser account swap.
+      qc.clear();
       router.push(next);
       router.refresh();
     } catch (err) {

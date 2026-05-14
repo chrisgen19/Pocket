@@ -1,5 +1,6 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -9,6 +10,7 @@ import { signUp } from '@/lib/auth-client';
 
 export function RegisterForm() {
   const router = useRouter();
+  const qc = useQueryClient();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,6 +31,9 @@ export function RegisterForm() {
         setError(result.error.message ?? 'Sign up failed');
         return;
       }
+      // Drop any user-scoped queries cached from a previous session in this
+      // browser tab so the new account doesn't see the prior user's data.
+      qc.clear();
       router.push('/saves');
       router.refresh();
     } catch (err) {
