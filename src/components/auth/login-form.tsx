@@ -10,11 +10,13 @@ import { signIn } from '@/lib/auth-client';
 
 // Reject anything that isn't an app-relative path: bare paths only, no
 // protocol schemes (javascript:, data:), no protocol-relative URLs (//host),
-// no Windows-style escapes. Falls back to /saves otherwise.
+// no Windows-style escapes, no CR/LF (header-injection paranoia). Falls back
+// to /saves otherwise.
 function sanitizeNext(raw: string | null): string {
   if (!raw) return '/saves';
   if (!raw.startsWith('/')) return '/saves';
   if (raw.startsWith('//') || raw.startsWith('/\\')) return '/saves';
+  if (/[\r\n]/.test(raw)) return '/saves';
   return raw;
 }
 
@@ -31,10 +33,14 @@ export function LoginForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (submitting) return;
     setError(null);
     setSubmitting(true);
     try {
-      const result = await signIn.email({ email, password });
+      const result = await signIn.email({
+        email: email.trim().toLowerCase(),
+        password,
+      });
       if (result.error) {
         setError(result.error.message ?? 'Sign in failed');
         return;

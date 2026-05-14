@@ -19,6 +19,7 @@ export function RegisterForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (submitting) return;
     setError(null);
     if (password.length < 8) {
       setError('Password must be at least 8 characters.');
@@ -26,7 +27,11 @@ export function RegisterForm() {
     }
     setSubmitting(true);
     try {
-      const result = await signUp.email({ email, password, name });
+      const result = await signUp.email({
+        email: email.trim().toLowerCase(),
+        password,
+        name: name.trim(),
+      });
       if (result.error) {
         setError(result.error.message ?? 'Sign up failed');
         return;
