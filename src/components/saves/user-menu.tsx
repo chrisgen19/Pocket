@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -66,14 +67,17 @@ export function UserMenu() {
         {initial}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col">
-            <span className="text-sm font-medium text-gray-900 truncate">
-              {session.user.name || 'Account'}
-            </span>
-            <span className="text-xs text-gray-500 truncate">{session.user.email}</span>
-          </div>
-        </DropdownMenuLabel>
+        {/* GroupLabel (which DropdownMenuLabel wraps) must be inside a Group. */}
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="font-normal">
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-gray-900 truncate">
+                {session.user.name || 'Account'}
+              </span>
+              <span className="text-xs text-gray-500 truncate">{session.user.email}</span>
+            </div>
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem disabled>
           <User className="w-4 h-4 mr-2" /> Settings
