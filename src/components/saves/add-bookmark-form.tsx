@@ -2,9 +2,8 @@
 
 import { Link as LinkIcon, Loader2, Plus, Tag } from 'lucide-react';
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
-import { useSavesStore } from '@/features/saves/store';
-import { useToastStore } from '@/features/saves/toast-store';
-import { normalizeUrl, parseTags } from '@/features/saves/utils';
+import { useCreateBookmark } from '@/features/saves/hooks';
+import { parseTags } from '@/features/saves/utils';
 
 export type AddBookmarkFormHandle = {
   focus: () => void;
@@ -15,9 +14,7 @@ export const AddBookmarkForm = forwardRef<AddBookmarkFormHandle>(
     const urlRef = useRef<HTMLInputElement>(null);
     const [url, setUrl] = useState('');
     const [tags, setTags] = useState('');
-    const [submitting, setSubmitting] = useState(false);
-    const addBookmark = useSavesStore((s) => s.addBookmark);
-    const showToast = useToastStore((s) => s.show);
+    const createMutation = useCreateBookmark();
 
     useImperativeHandle(ref, () => ({
       focus: () => {
@@ -31,21 +28,18 @@ export const AddBookmarkForm = forwardRef<AddBookmarkFormHandle>(
       const raw = url.trim();
       if (!raw) return;
 
-      setSubmitting(true);
       try {
-        // Simulated metadata fetch — replace with real backend call later.
-        await new Promise((resolve) => setTimeout(resolve, 600));
-        addBookmark({ url: normalizeUrl(raw), tags: parseTags(tags) });
-        showToast('URL Saved successfully');
+        await createMutation.mutateAsync({ url: raw, tags: parseTags(tags) });
         setUrl('');
         setTags('');
       } catch {
-        showToast('Failed to save URL');
+        // toast already shown by the hook
       } finally {
-        setSubmitting(false);
         urlRef.current?.focus();
       }
     }
+
+    const submitting = createMutation.isPending;
 
     return (
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-8">

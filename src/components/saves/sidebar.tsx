@@ -2,6 +2,7 @@
 
 import { Archive, Hash, House, Star } from 'lucide-react';
 import { useMemo } from 'react';
+import { useBookmarks } from '@/features/saves/hooks';
 import { useSavesStore } from '@/features/saves/store';
 import type { SavesCategory } from '@/features/saves/types';
 import { cn } from '@/lib/utils';
@@ -13,7 +14,7 @@ const categories: Array<{ key: SavesCategory; label: string; Icon: typeof House 
 ];
 
 export function Sidebar() {
-  const bookmarks = useSavesStore((s) => s.bookmarks);
+  const { data: bookmarks = [] } = useBookmarks();
   const category = useSavesStore((s) => s.category);
   const tagFilter = useSavesStore((s) => s.tagFilter);
   const setCategory = useSavesStore((s) => s.setCategory);
@@ -21,9 +22,7 @@ export function Sidebar() {
 
   const tags = useMemo(() => {
     const set = new Set<string>();
-    for (const b of bookmarks) {
-      for (const t of b.tags) set.add(t);
-    }
+    for (const b of bookmarks) for (const t of b.tags) set.add(t);
     return [...set].sort();
   }, [bookmarks]);
 

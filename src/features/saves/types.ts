@@ -13,3 +13,8 @@ export type Bookmark = {
 
 export type SavesCategory = 'home' | 'favorites' | 'archive';
 export type SavesView = 'grid' | 'list';
+
+export type {
+  CreateBookmarkInput,
+  UpdateBookmarkInput,
+} from './schemas';
