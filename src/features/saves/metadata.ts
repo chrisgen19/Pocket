@@ -1,4 +1,7 @@
+import { assertSafeUrl, UnsafeUrlError } from '@/lib/url-safety';
 import { extractDomain } from './utils';
+
+export { UnsafeUrlError };
 
 export type LinkMetadata = {
   url: string;
@@ -7,6 +10,11 @@ export type LinkMetadata = {
   excerpt: string;
   imageUrl: string;
 };
+
+const MAX_BYTES = 256 * 1024;
+const MAX_REDIRECTS = 5;
+const TIMEOUT_MS = 8000;
+const USER_AGENT = 'Mozilla/5.0 (compatible; PocketBot/0.1; +https://github.com/chrisgen19/Pocket)';
 
 function decodeEntities(s: string): string {
   return s
@@ -20,7 +28,6 @@ function decodeEntities(s: string): string {
 
 function pickMeta(html: string, names: string[]): string | null {
   for (const name of names) {
-    // Match property/name in either order; both single and double quotes.
     const patterns = [
       new RegExp(
         `<meta[^>]+(?:property|name)=["']${name}["'][^>]*content=["']([^"']+)["']`,
@@ -52,7 +59,73 @@ function resolveUrl(maybeRelative: string, base: string): string {
   }
 }
 
+async function readCapped(res: Response, max: number): Promise<string> {
+  const reader = res.body?.getReader();
+  if (!reader) return '';
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+    const remaining = max - total;
+    if (value.byteLength <= remaining) {
+      chunks.push(value);
+      total += value.byteLength;
+    } else {
+      if (remaining > 0) chunks.push(value.subarray(0, remaining));
+      total = max;
+      await reader.cancel().catch(() => {});
+      break;
+    }
+  }
+  const merged = new Uint8Array(total);
+  let offset = 0;
+  for (const c of chunks) {
+    merged.set(c, offset);
+    offset += c.byteLength;
+  }
+  return new TextDecoder('utf-8', { fatal: false }).decode(merged);
+}
+
+async function safeFetchHtml(target: string): Promise<{ url: string; html: string } | null> {
+  let currentUrl = target;
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    await assertSafeUrl(currentUrl);
+    const res = await fetch(currentUrl, {
+      redirect: 'manual',
+      headers: {
+        'User-Agent': USER_AGENT,
+        Accept: 'text/html,application/xhtml+xml',
+      },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+
+    if (res.status >= 300 && res.status < 400) {
+      const location = res.headers.get('location');
+      if (!location) return null;
+      currentUrl = new URL(location, currentUrl).toString();
+      continue;
+    }
+    if (!res.ok) return null;
+
+    const contentType = res.headers.get('content-type') ?? '';
+    if (!/text\/html|application\/xhtml/i.test(contentType)) return null;
+
+    const declaredLength = Number(res.headers.get('content-length') ?? '0');
+    if (declaredLength && declaredLength > MAX_BYTES * 8) return null;
+
+    const html = await readCapped(res, MAX_BYTES);
+    return { url: currentUrl, html };
+  }
+  return null;
+}
+
 export async function fetchLinkMetadata(target: string): Promise<LinkMetadata> {
+  // Validate up front so the caller (route handler) can map this to a 400.
+  // Redirect hops are re-validated inside safeFetchHtml.
+  await assertSafeUrl(target);
+
   const domain = extractDomain(target);
   const fallback: LinkMetadata = {
     url: target,
@@ -63,18 +136,10 @@ export async function fetchLinkMetadata(target: string): Promise<LinkMetadata> {
   };
 
   try {
-    const res = await fetch(target, {
-      redirect: 'follow',
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (compatible; PocketBot/0.1; +https://github.com/chrisgen19/Pocket)',
-        Accept: 'text/html,application/xhtml+xml',
-      },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) return fallback;
-    const html = (await res.text()).slice(0, 250_000);
+    const result = await safeFetchHtml(target);
+    if (!result) return fallback;
 
+    const { url: finalUrl, html } = result;
     const title =
       pickMeta(html, ['og:title', 'twitter:title']) ?? pickTitle(html) ?? fallback.title;
     const excerpt =
@@ -86,9 +151,11 @@ export async function fetchLinkMetadata(target: string): Promise<LinkMetadata> {
       title,
       domain,
       excerpt,
-      imageUrl: rawImage ? resolveUrl(rawImage, target) : '',
+      imageUrl: rawImage ? resolveUrl(rawImage, finalUrl) : '',
     };
-  } catch {
+  } catch (err) {
+    // Re-throw unsafe-URL errors so the route handler can return a 400.
+    if (err instanceof UnsafeUrlError) throw err;
     return fallback;
   }
 }

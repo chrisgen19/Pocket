@@ -4,6 +4,7 @@ import { createBookmarkSchema } from '@/features/saves/schemas';
 import { normalizeUrl } from '@/features/saves/utils';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/session';
+import { UnsafeUrlError } from '@/lib/url-safety';
 
 export async function GET() {
   const session = await getSession();
@@ -26,11 +27,23 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const parsed = createBookmarkSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: 'Invalid input', issues: parsed.error.issues }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Invalid input', issues: parsed.error.issues },
+      { status: 400 },
+    );
   }
 
   const url = normalizeUrl(parsed.data.url);
-  const metadata = await fetchLinkMetadata(url);
+
+  let metadata: Awaited<ReturnType<typeof fetchLinkMetadata>>;
+  try {
+    metadata = await fetchLinkMetadata(url);
+  } catch (err) {
+    if (err instanceof UnsafeUrlError) {
+      return NextResponse.json({ error: err.message }, { status: 400 });
+    }
+    throw err;
+  }
 
   const bookmark = await prisma.bookmark.create({
     data: {
