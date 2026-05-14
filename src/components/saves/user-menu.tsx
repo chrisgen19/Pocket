@@ -11,15 +11,29 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useToastStore } from '@/features/saves/toast-store';
 import { signOut, useSession } from '@/lib/auth-client';
 
 export function UserMenu() {
   const { data: session, isPending } = useSession();
   const router = useRouter();
   const qc = useQueryClient();
+  const showToast = useToastStore((s) => s.show);
 
   async function handleSignOut() {
-    await signOut();
+    // Only clear local state + redirect once the server confirms the session
+    // is gone. Otherwise the UI would say "logged out" while the cookie still
+    // authenticates subsequent requests.
+    try {
+      const result = await signOut();
+      if (result?.error) {
+        showToast(result.error.message ?? 'Sign out failed');
+        return;
+      }
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Sign out failed');
+      return;
+    }
     qc.clear();
     router.push('/login');
     router.refresh();
