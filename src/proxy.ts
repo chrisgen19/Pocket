@@ -2,10 +2,15 @@ import { getSessionCookie } from 'better-auth/cookies';
 import { type NextRequest, NextResponse } from 'next/server';
 
 const PROTECTED_PREFIXES = ['/saves'];
-const AUTH_ROUTES = ['/login', '/register'];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // getSessionCookie only checks presence, not signature — sufficient for
+  // protecting routes (the API verifies the session for real). We do NOT
+  // redirect logged-in visitors away from /login or /register because a stale
+  // cookie (post-secret-rotation, expired session, etc.) would otherwise trap
+  // the user on /saves with no way to re-authenticate.
   const sessionCookie = getSessionCookie(request);
   const isAuthed = Boolean(sessionCookie);
 
@@ -13,13 +18,6 @@ export function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('next', pathname);
-    return NextResponse.redirect(url);
-  }
-
-  if (isAuthed && AUTH_ROUTES.includes(pathname)) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/saves';
-    url.search = '';
     return NextResponse.redirect(url);
   }
 
