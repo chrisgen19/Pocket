@@ -53,7 +53,7 @@ function isPrivateIPv6(ip: string): boolean {
   return false;
 }
 
-function isPrivateIP(ip: string): boolean {
+export function isPrivateIP(ip: string): boolean {
   if (net.isIPv4(ip)) return isPrivateIPv4(ip);
   if (net.isIPv6(ip)) return isPrivateIPv6(ip);
   return true; // unparseable — fail safe

@@ -1,3 +1,5 @@
+import { fetch as undiciFetch } from 'undici';
+import { safeDispatcher } from '@/lib/safe-fetch';
 import { assertSafeUrl, UnsafeUrlError } from '@/lib/url-safety';
 import { extractDomain } from './utils';
 
@@ -59,7 +61,11 @@ function resolveUrl(maybeRelative: string, base: string): string {
   }
 }
 
-async function readCapped(res: Response, max: number): Promise<string> {
+type StreamingResponse = {
+  body: { getReader(): { read(): Promise<{ done: boolean; value?: Uint8Array }>; cancel(): Promise<void> } } | null;
+};
+
+async function readCapped(res: StreamingResponse, max: number): Promise<string> {
   const reader = res.body?.getReader();
   if (!reader) return '';
   const chunks: Uint8Array[] = [];
@@ -92,13 +98,14 @@ async function safeFetchHtml(target: string): Promise<{ url: string; html: strin
   let currentUrl = target;
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     await assertSafeUrl(currentUrl);
-    const res = await fetch(currentUrl, {
+    const res = await undiciFetch(currentUrl, {
       redirect: 'manual',
       headers: {
         'User-Agent': USER_AGENT,
         Accept: 'text/html,application/xhtml+xml',
       },
       signal: AbortSignal.timeout(TIMEOUT_MS),
+      dispatcher: safeDispatcher,
     });
 
     if (res.status >= 300 && res.status < 400) {
