@@ -45,17 +45,36 @@ export async function POST(request: Request) {
     throw err;
   }
 
-  const bookmark = await prisma.bookmark.create({
-    data: {
+  // Upsert: re-saving the same URL refreshes metadata, un-archives the entry,
+  // and merges new tags into the existing set.
+  const existing = await prisma.bookmark.findUnique({
+    where: { userId_url: { userId: session.user.id, url } },
+    select: { tags: true },
+  });
+  const mergedTags = existing
+    ? Array.from(new Set([...existing.tags, ...parsed.data.tags]))
+    : parsed.data.tags;
+
+  const bookmark = await prisma.bookmark.upsert({
+    where: { userId_url: { userId: session.user.id, url } },
+    create: {
       userId: session.user.id,
       url,
       title: metadata.title,
       domain: metadata.domain,
       excerpt: metadata.excerpt,
       imageUrl: metadata.imageUrl,
-      tags: parsed.data.tags,
+      tags: mergedTags,
+    },
+    update: {
+      title: metadata.title,
+      domain: metadata.domain,
+      excerpt: metadata.excerpt,
+      imageUrl: metadata.imageUrl,
+      tags: mergedTags,
+      isArchived: false,
     },
   });
 
-  return NextResponse.json(bookmark, { status: 201 });
+  return NextResponse.json(bookmark, { status: existing ? 200 : 201 });
 }

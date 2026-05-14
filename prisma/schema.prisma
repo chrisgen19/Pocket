@@ -88,6 +88,7 @@ model Bookmark {
   updatedAt  DateTime @updatedAt
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, url])
   @@index([userId, isArchived])
   @@index([userId, isFavorite])
   @@index([userId, createdAt(sort: Desc)])
