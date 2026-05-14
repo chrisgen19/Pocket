@@ -1,6 +1,7 @@
 'use client';
 
-import { Bookmark, Plus, User } from 'lucide-react';
+import { Bookmark, Plus } from 'lucide-react';
+import { UserMenu } from './user-menu';
 
 type NavbarProps = {
   onAddClick: () => void;
@@ -27,9 +28,7 @@ export function Navbar({ onAddClick }: NavbarProps) {
             >
               <Plus className="w-5 h-5" />
             </button>
-            <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 cursor-pointer">
-              <User className="w-4 h-4" />
-            </div>
+            <UserMenu />
           </div>
         </div>
       </div>
