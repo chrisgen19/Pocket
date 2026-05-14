@@ -1,9 +1,15 @@
 'use client';
 
-import { LayoutGrid, List } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { LayoutGrid, List, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { useMemo, useRef } from 'react';
+import {
+  useBookmarks,
+  useDeleteBookmark,
+  useUpdateBookmark,
+} from '@/features/saves/hooks';
 import { useSavesStore } from '@/features/saves/store';
-import { useToastStore } from '@/features/saves/toast-store';
+import { isApiError } from '@/lib/api-error';
 import { cn } from '@/lib/utils';
 import { AddBookmarkForm, type AddBookmarkFormHandle } from './add-bookmark-form';
 import { BookmarkCard } from './bookmark-card';
@@ -11,38 +17,32 @@ import { EmptyState } from './empty-state';
 import { Navbar } from './navbar';
 import { Sidebar } from './sidebar';
 
-function useEmptyCopy(category: string, tagFilter: string | null) {
-  if (tagFilter) {
+function emptyCopy(category: string, tagFilter: string | null) {
+  if (tagFilter)
     return {
       title: `No saves tagged #${tagFilter}`,
       description: 'Try saving some items with this tag.',
     };
-  }
-  if (category === 'favorites') {
+  if (category === 'favorites')
     return { title: 'No favorites yet', description: 'Click the star icon on a save to add it here.' };
-  }
-  if (category === 'archive') {
+  if (category === 'archive')
     return { title: 'Archive is empty', description: 'Items you archive will appear here.' };
-  }
   return { title: 'No saves yet', description: 'Save articles, videos, and more from the web.' };
 }
 
 export function SavesView() {
   const formRef = useRef<AddBookmarkFormHandle>(null);
 
-  // Avoid hydration mismatch: render after Zustand persist rehydrates.
-  const [hydrated, setHydrated] = useState(false);
-  useEffect(() => setHydrated(true), []);
-
-  const bookmarks = useSavesStore((s) => s.bookmarks);
   const view = useSavesStore((s) => s.view);
   const category = useSavesStore((s) => s.category);
   const tagFilter = useSavesStore((s) => s.tagFilter);
   const setView = useSavesStore((s) => s.setView);
-  const deleteBookmark = useSavesStore((s) => s.deleteBookmark);
-  const toggleFavorite = useSavesStore((s) => s.toggleFavorite);
-  const toggleArchive = useSavesStore((s) => s.toggleArchive);
-  const showToast = useToastStore((s) => s.show);
+
+  const bookmarksQuery = useBookmarks();
+  const updateMutation = useUpdateBookmark();
+  const deleteMutation = useDeleteBookmark();
+
+  const bookmarks = bookmarksQuery.data ?? [];
 
   const visible = useMemo(() => {
     let list = bookmarks;
@@ -53,7 +53,9 @@ export function SavesView() {
     return list;
   }, [bookmarks, category, tagFilter]);
 
-  const empty = useEmptyCopy(category, tagFilter);
+  const empty = emptyCopy(category, tagFilter);
+  const error = bookmarksQuery.error;
+  const unauthorized = isApiError(error) && error.status === 401;
 
   return (
     <>
@@ -93,7 +95,27 @@ export function SavesView() {
             </div>
           </div>
 
-          {!hydrated ? null : visible.length === 0 ? (
+          {unauthorized ? (
+            <div className="text-center py-20">
+              <h3 className="text-lg font-medium text-gray-900">Sign in required</h3>
+              <p className="mt-1 text-gray-500">Log in to view and save bookmarks.</p>
+              <Link
+                href="/login"
+                className="inline-block mt-4 bg-red-500 hover:bg-red-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium"
+              >
+                Go to login
+              </Link>
+            </div>
+          ) : bookmarksQuery.isLoading ? (
+            <div className="flex items-center justify-center py-20 text-gray-400">
+              <Loader2 className="w-6 h-6 animate-spin" />
+            </div>
+          ) : error ? (
+            <div className="text-center py-20">
+              <h3 className="text-lg font-medium text-gray-900">Something went wrong</h3>
+              <p className="mt-1 text-gray-500">{error instanceof Error ? error.message : 'Unknown error'}</p>
+            </div>
+          ) : visible.length === 0 ? (
             <EmptyState title={empty.title} description={empty.description} />
           ) : (
             <div
@@ -108,20 +130,13 @@ export function SavesView() {
                   key={bookmark.id}
                   bookmark={bookmark}
                   view={view}
-                  onToggleFavorite={(id) => {
-                    toggleFavorite(id);
-                    const b = bookmarks.find((x) => x.id === id);
-                    showToast(!b?.isFavorite ? 'Added to Favorites' : 'Removed from Favorites');
-                  }}
-                  onToggleArchive={(id) => {
-                    toggleArchive(id);
-                    const b = bookmarks.find((x) => x.id === id);
-                    showToast(!b?.isArchived ? 'Archived' : 'Unarchived');
-                  }}
-                  onDelete={(id) => {
-                    deleteBookmark(id);
-                    showToast('Item deleted');
-                  }}
+                  onToggleFavorite={(id) =>
+                    updateMutation.mutate({ id, patch: { isFavorite: !bookmark.isFavorite } })
+                  }
+                  onToggleArchive={(id) =>
+                    updateMutation.mutate({ id, patch: { isArchived: !bookmark.isArchived } })
+                  }
+                  onDelete={(id) => deleteMutation.mutate(id)}
                 />
               ))}
             </div>
