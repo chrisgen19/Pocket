@@ -11,7 +11,8 @@ import { signUp } from '@/lib/auth-client';
 export function RegisterForm() {
   const router = useRouter();
   const qc = useQueryClient();
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -21,6 +22,12 @@ export function RegisterForm() {
     e.preventDefault();
     if (submitting) return;
     setError(null);
+    const first = firstName.trim();
+    const last = lastName.trim();
+    if (!first || !last) {
+      setError('Please enter both your first and last name.');
+      return;
+    }
     if (password.length < 8) {
       setError('Password must be at least 8 characters.');
       return;
@@ -30,7 +37,7 @@ export function RegisterForm() {
       const result = await signUp.email({
         email: email.trim().toLowerCase(),
         password,
-        name: name.trim(),
+        name: `${first} ${last}`,
       });
       if (result.error) {
         setError(result.error.message ?? 'Sign up failed');
@@ -50,17 +57,31 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-1.5">
-        <Label htmlFor="name">Name</Label>
-        <Input
-          id="name"
-          type="text"
-          autoComplete="name"
-          required
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          disabled={submitting}
-        />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="firstName">First name</Label>
+          <Input
+            id="firstName"
+            type="text"
+            autoComplete="given-name"
+            required
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            disabled={submitting}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="lastName">Last name</Label>
+          <Input
+            id="lastName"
+            type="text"
+            autoComplete="family-name"
+            required
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            disabled={submitting}
+          />
+        </div>
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="email">Email</Label>
