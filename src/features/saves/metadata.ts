@@ -54,11 +54,46 @@ function pickTitle(html: string): string | null {
 }
 
 function resolveUrl(maybeRelative: string, base: string): string {
+  // Some sites use unencoded spaces in og:image paths. Encode the path
+  // portion only so new URL() can parse it, then return the normalised href.
+  const encoded = maybeRelative.replace(/[^\x21-\x7E]|[ <>{}|\\^`]/g, (c) =>
+    encodeURIComponent(c),
+  );
   try {
-    return new URL(maybeRelative, base).toString();
+    return new URL(encoded, base).href;
   } catch {
-    return maybeRelative;
+    return encoded;
   }
+}
+
+const SKIP_IMAGE_RE = /logo|icon|avatar|sprite|banner|badge|pixel|spacer|tracking|button/i;
+
+// Extract the first content <img> from the page.
+// Prefers images inside <article> or <main>; falls back to full <body>.
+// Skips data URIs, tiny images (explicit w/h <= 50px), and common chrome assets.
+function pickFirstBodyImage(html: string, baseUrl: string): string | null {
+  const contentMatch =
+    html.match(/<(?:article|main)\b[^>]*>([\s\S]*?)<\/(?:article|main)>/i);
+  const scope = contentMatch ? contentMatch[0] : (html.match(/<body[\s\S]*$/i)?.[0] ?? html);
+
+  const imgRe = /<img\s[^>]+>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = imgRe.exec(scope)) !== null) {
+    const tag = match[0];
+    const src = tag.match(/\ssrc=["']([^"']+)["']/i)?.[1];
+    if (!src || src.startsWith('data:')) continue;
+
+    const w = Number(tag.match(/\swidth=["']?(\d+)/i)?.[1] ?? 0);
+    const h = Number(tag.match(/\sheight=["']?(\d+)/i)?.[1] ?? 0);
+    if ((w && w <= 50) || (h && h <= 50)) continue;
+
+    const cls = tag.match(/\sclass=["']([^"']*)["']/i)?.[1] ?? '';
+    const id = tag.match(/\sid=["']([^"']*)["']/i)?.[1] ?? '';
+    if (SKIP_IMAGE_RE.test(src) || SKIP_IMAGE_RE.test(cls) || SKIP_IMAGE_RE.test(id)) continue;
+
+    return resolveUrl(src, baseUrl);
+  }
+  return null;
 }
 
 type StreamingResponse = {
@@ -151,15 +186,12 @@ export async function fetchLinkMetadata(target: string): Promise<LinkMetadata> {
       pickMeta(html, ['og:title', 'twitter:title']) ?? pickTitle(html) ?? fallback.title;
     const excerpt =
       pickMeta(html, ['og:description', 'twitter:description', 'description']) ?? '';
-    const rawImage = pickMeta(html, ['og:image', 'twitter:image']) ?? '';
+    const rawImage = pickMeta(html, ['og:image', 'twitter:image']);
+    const imageUrl = rawImage
+      ? resolveUrl(rawImage, finalUrl)
+      : (pickFirstBodyImage(html, finalUrl) ?? '');
 
-    return {
-      url: target,
-      title,
-      domain,
-      excerpt,
-      imageUrl: rawImage ? resolveUrl(rawImage, finalUrl) : '',
-    };
+    return { url: target, title, domain, excerpt, imageUrl };
   } catch (err) {
     // Re-throw unsafe-URL errors so the route handler can return a 400.
     if (err instanceof UnsafeUrlError) throw err;
