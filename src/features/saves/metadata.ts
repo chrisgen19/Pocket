@@ -68,6 +68,35 @@ function resolveUrl(maybeRelative: string, base: string): string {
 }
 
 const SKIP_IMAGE_RE = /logo|icon|avatar|sprite|banner|badge|pixel|spacer|tracking|button/i;
+// Meta descriptions shorter than this are likely site-wide taglines.
+const SHORT_DESCRIPTION_THRESHOLD = 80;
+const EXCERPT_MAX_LENGTH = 280;
+
+// Pull the first substantive paragraph from <article>/<main> (falls back to
+// <body>). Used when the meta description is missing or a generic site tagline.
+function pickFirstBodyParagraph(html: string): string | null {
+  const scope =
+    html.match(/<(?:article|main)\b[^>]*>([\s\S]*?)<\/(?:article|main)>/i)?.[0] ??
+    html.match(/<body[\s\S]*$/i)?.[0] ??
+    html;
+
+  const pRe = /<p\b[^>]*>([\s\S]*?)<\/p>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = pRe.exec(scope)) !== null) {
+    const text = decodeEntities(
+      match[1]
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim(),
+    );
+    if (text.length >= 40) {
+      return text.length > EXCERPT_MAX_LENGTH
+        ? `${text.slice(0, EXCERPT_MAX_LENGTH).trimEnd()}…`
+        : text;
+    }
+  }
+  return null;
+}
 
 // Extract the first content <img> from the page.
 // Prefers images inside <article> or <main>; falls back to full <body>.
@@ -185,8 +214,13 @@ export async function fetchLinkMetadata(target: string): Promise<LinkMetadata> {
     const { url: finalUrl, html } = result;
     const title =
       pickMeta(html, ['og:title', 'twitter:title']) ?? pickTitle(html) ?? fallback.title;
+    const metaDescription = pickMeta(html, ['og:description', 'twitter:description', 'description']);
+    // If the meta description is missing or short enough to be a generic
+    // site tagline, prefer the first substantive paragraph of the article.
     const excerpt =
-      pickMeta(html, ['og:description', 'twitter:description', 'description']) ?? '';
+      !metaDescription || metaDescription.length < SHORT_DESCRIPTION_THRESHOLD
+        ? (pickFirstBodyParagraph(html) ?? metaDescription ?? '')
+        : metaDescription;
     const rawImage = pickMeta(html, ['og:image', 'twitter:image']);
     const imageUrl = rawImage
       ? resolveUrl(rawImage, finalUrl)
