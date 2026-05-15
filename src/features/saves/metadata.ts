@@ -18,6 +18,14 @@ const MAX_REDIRECTS = 5;
 const TIMEOUT_MS = 8000;
 const USER_AGENT = 'Mozilla/5.0 (compatible; PocketBot/0.1; +https://github.com/chrisgen19/Pocket)';
 
+// WordPress.com mShots: free, no API key, no watermark. Used as the last-resort
+// thumbnail when the page exposes no og:image / twitter:image / body image.
+// First request for a new URL may return a placeholder for ~30s while their
+// service generates the real screenshot; subsequent loads serve the cached image.
+function buildScreenshotUrl(target: string): string {
+  return `https://s.wordpress.com/mshots/v1/${encodeURIComponent(target)}?w=600`;
+}
+
 function decodeEntities(s: string): string {
   return s
     .replace(/&lt;/g, '<')
@@ -204,7 +212,7 @@ export async function fetchLinkMetadata(target: string): Promise<LinkMetadata> {
     title: `Saved from ${domain}`,
     domain,
     excerpt: '',
-    imageUrl: '',
+    imageUrl: buildScreenshotUrl(target),
   };
 
   try {
@@ -224,7 +232,7 @@ export async function fetchLinkMetadata(target: string): Promise<LinkMetadata> {
     const rawImage = pickMeta(html, ['og:image', 'twitter:image']);
     const imageUrl = rawImage
       ? resolveUrl(rawImage, finalUrl)
-      : (pickFirstBodyImage(html, finalUrl) ?? '');
+      : (pickFirstBodyImage(html, finalUrl) ?? buildScreenshotUrl(target));
 
     return { url: target, title, domain, excerpt, imageUrl };
   } catch (err) {
