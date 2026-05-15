@@ -54,9 +54,6 @@ export function SavesView({ initialTag }: SavesViewProps = {}) {
   function goToTag(tag: string) {
     router.push(`/saves/tags/${encodeURIComponent(tag)}`);
   }
-  function clearTag() {
-    router.push('/saves');
-  }
 
   const bookmarksQuery = useBookmarks();
   const updateMutation = useUpdateBookmark();
