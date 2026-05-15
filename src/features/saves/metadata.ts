@@ -18,14 +18,38 @@ const MAX_REDIRECTS = 5;
 const TIMEOUT_MS = 8000;
 const USER_AGENT = 'Mozilla/5.0 (compatible; PocketBot/0.1; +https://github.com/chrisgen19/Pocket)';
 
+// WordPress.com mShots: free, no API key, no watermark. Used as the last-resort
+// thumbnail when the page exposes no og:image / twitter:image / body image.
+// First request for a new URL may return a placeholder for ~30s while their
+// service generates the real screenshot; subsequent loads serve the cached image.
+//
+// We strip query strings and fragments so we don't disclose tokens/identifiers
+// (auth tokens, tracking params, anchors) to a third-party service. The
+// resulting screenshot is keyed by origin + pathname, which is what most
+// articles render the same content for anyway.
+function buildScreenshotUrl(target: string): string {
+  let canonical = target;
+  try {
+    const u = new URL(target);
+    u.search = '';
+    u.hash = '';
+    canonical = u.toString();
+  } catch {
+    // Fall through with the raw target — URL was already validated upstream
+    // by assertSafeUrl, so this catch is purely defensive.
+  }
+  return `https://s.wordpress.com/mshots/v1/${encodeURIComponent(canonical)}?w=600`;
+}
+
 function decodeEntities(s: string): string {
   return s
-    .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
     .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, ' ');
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&');
 }
 
 function pickMeta(html: string, names: string[]): string | null {
@@ -67,6 +91,37 @@ function resolveUrl(maybeRelative: string, base: string): string {
 }
 
 const SKIP_IMAGE_RE = /logo|icon|avatar|sprite|banner|badge|pixel|spacer|tracking|button/i;
+// Meta descriptions shorter than this are very likely site-wide taglines
+// (e.g. "Laurent Le Brun's blog", "My personal site"). Authored descriptions
+// for real articles are almost always longer than 40 chars; keep them intact.
+const SHORT_DESCRIPTION_THRESHOLD = 40;
+const EXCERPT_MAX_LENGTH = 280;
+
+// Pull the first substantive paragraph from <article>/<main> (falls back to
+// <body>). Used when the meta description is missing or a generic site tagline.
+function pickFirstBodyParagraph(html: string): string | null {
+  const scope =
+    html.match(/<(?:article|main)\b[^>]*>([\s\S]*?)<\/(?:article|main)>/i)?.[0] ??
+    html.match(/<body[\s\S]*$/i)?.[0] ??
+    html;
+
+  const pRe = /<p\b[^>]*>([\s\S]*?)<\/p>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = pRe.exec(scope)) !== null) {
+    const text = decodeEntities(
+      match[1]
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim(),
+    );
+    if (text.length >= 40) {
+      return text.length > EXCERPT_MAX_LENGTH
+        ? `${text.slice(0, EXCERPT_MAX_LENGTH).trimEnd()}…`
+        : text;
+    }
+  }
+  return null;
+}
 
 // Extract the first content <img> from the page.
 // Prefers images inside <article> or <main>; falls back to full <body>.
@@ -174,7 +229,7 @@ export async function fetchLinkMetadata(target: string): Promise<LinkMetadata> {
     title: `Saved from ${domain}`,
     domain,
     excerpt: '',
-    imageUrl: '',
+    imageUrl: buildScreenshotUrl(target),
   };
 
   try {
@@ -184,12 +239,17 @@ export async function fetchLinkMetadata(target: string): Promise<LinkMetadata> {
     const { url: finalUrl, html } = result;
     const title =
       pickMeta(html, ['og:title', 'twitter:title']) ?? pickTitle(html) ?? fallback.title;
+    const metaDescription = pickMeta(html, ['og:description', 'twitter:description', 'description']);
+    // If the meta description is missing or short enough to be a generic
+    // site tagline, prefer the first substantive paragraph of the article.
     const excerpt =
-      pickMeta(html, ['og:description', 'twitter:description', 'description']) ?? '';
+      !metaDescription || metaDescription.length < SHORT_DESCRIPTION_THRESHOLD
+        ? (pickFirstBodyParagraph(html) ?? metaDescription ?? '')
+        : metaDescription;
     const rawImage = pickMeta(html, ['og:image', 'twitter:image']);
     const imageUrl = rawImage
       ? resolveUrl(rawImage, finalUrl)
-      : (pickFirstBodyImage(html, finalUrl) ?? '');
+      : (pickFirstBodyImage(html, finalUrl) ?? buildScreenshotUrl(target));
 
     return { url: target, title, domain, excerpt, imageUrl };
   } catch (err) {

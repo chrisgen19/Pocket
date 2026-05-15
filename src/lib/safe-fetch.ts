@@ -13,17 +13,31 @@ import { isPrivateIP, UnsafeUrlError } from './url-safety';
 export const safeDispatcher = new Agent({
   connect: {
     lookup: (hostname, options, callback) => {
-      dns.lookup(hostname, options ?? {}, (err, address, family) => {
-        if (err) return callback(err, '', 0);
-        const addr = String(address);
-        if (isPrivateIP(addr)) {
-          return callback(
-            new UnsafeUrlError('Refused: host resolved to a private or reserved address'),
-            '',
-            0,
+      // Always resolve with all:true so we can validate every returned address,
+      // then hand back to undici in whichever shape it asked for (it passes
+      // all:true in modern versions, false in older ones).
+      dns.lookup(hostname, { ...(options ?? {}), all: true }, (err, addresses) => {
+        if (err) return (callback as (e: Error | null) => void)(err);
+
+        const list = addresses as Array<{ address: string; family: number }>;
+        for (const { address } of list) {
+          if (isPrivateIP(address)) {
+            return (callback as (e: Error | null) => void)(
+              new UnsafeUrlError('Refused: host resolved to a private or reserved address'),
+            );
+          }
+        }
+
+        if (options?.all) {
+          (callback as (e: Error | null, addrs: typeof list) => void)(null, list);
+        } else {
+          const first = list[0];
+          (callback as (e: Error | null, addr: string, family: number) => void)(
+            null,
+            first.address,
+            first.family,
           );
         }
-        callback(null, addr, family);
       });
     },
   },
