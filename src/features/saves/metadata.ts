@@ -20,12 +20,13 @@ const USER_AGENT = 'Mozilla/5.0 (compatible; PocketBot/0.1; +https://github.com/
 
 function decodeEntities(s: string): string {
   return s
-    .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
     .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, ' ');
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&');
 }
 
 function pickMeta(html: string, names: string[]): string | null {
