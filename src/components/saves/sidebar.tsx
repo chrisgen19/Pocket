@@ -22,10 +22,11 @@ export function Sidebar() {
   const setCategory = useSavesStore((s) => s.setCategory);
 
   function selectCategory(key: SavesCategory) {
-    setCategory(key);
-    // setCategory clears tagFilter in the store, but if we're currently on
-    // /saves/tags/[tag] the URL also needs to drop the tag segment.
+    // Push the URL update first so the route is already transitioning by the
+    // time setCategory clears tagFilter in the store. Avoids a brief render
+    // where the list is unfiltered but the URL still reads /saves/tags/[tag].
     if (tagFilter) router.push('/saves');
+    setCategory(key);
   }
   function selectTag(tag: string) {
     if (tagFilter === tag) {
