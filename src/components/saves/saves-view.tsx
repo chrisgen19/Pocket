@@ -2,7 +2,8 @@
 
 import { LayoutGrid, List, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { useMemo, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useRef } from 'react';
 import {
   useBookmarks,
   useDeleteBookmark,
@@ -30,13 +31,29 @@ function emptyCopy(category: string, tagFilter: string | null) {
   return { title: 'No saves yet', description: 'Save articles, videos, and more from the web.' };
 }
 
-export function SavesView() {
+type SavesViewProps = {
+  initialTag?: string;
+};
+
+export function SavesView({ initialTag }: SavesViewProps = {}) {
+  const router = useRouter();
   const formRef = useRef<AddBookmarkFormHandle>(null);
 
   const view = useSavesStore((s) => s.view);
   const category = useSavesStore((s) => s.category);
   const tagFilter = useSavesStore((s) => s.tagFilter);
   const setView = useSavesStore((s) => s.setView);
+  const setTagFilter = useSavesStore((s) => s.setTagFilter);
+
+  // URL is the source of truth: keep the store's tagFilter in sync with the
+  // route param (null on /saves, the param value on /saves/tags/[tag]).
+  useEffect(() => {
+    setTagFilter(initialTag ?? null);
+  }, [initialTag, setTagFilter]);
+
+  function goToTag(tag: string) {
+    router.push(`/saves/tags/${encodeURIComponent(tag)}`);
+  }
 
   const bookmarksQuery = useBookmarks();
   const updateMutation = useUpdateBookmark();
@@ -137,6 +154,7 @@ export function SavesView() {
                     updateMutation.mutate({ id, patch: { isArchived: !bookmark.isArchived } })
                   }
                   onDelete={(id) => deleteMutation.mutate(id)}
+                  onTagClick={goToTag}
                 />
               ))}
             </div>

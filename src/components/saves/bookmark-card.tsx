@@ -14,6 +14,7 @@ type BookmarkCardProps = {
   onToggleFavorite: (id: string) => void;
   onToggleArchive: (id: string) => void;
   onDelete: (id: string) => void;
+  onTagClick: (tag: string) => void;
 };
 
 export function BookmarkCard({
@@ -22,6 +23,7 @@ export function BookmarkCard({
   onToggleFavorite,
   onToggleArchive,
   onDelete,
+  onTagClick,
 }: BookmarkCardProps) {
   const [imgSrc, setImgSrc] = useState(bookmark.imageUrl?.trim() || FALLBACK_IMAGE);
 
@@ -64,12 +66,15 @@ export function BookmarkCard({
   const tags = bookmark.tags.length > 0 && (
     <div className="flex flex-wrap gap-2 mb-4">
       {bookmark.tags.map((tag) => (
-        <span
+        <button
           key={tag}
-          className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs font-medium"
+          type="button"
+          onClick={() => onTagClick(tag)}
+          className="bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 px-2 py-1 rounded text-xs font-medium transition-colors cursor-pointer"
+          title={`Filter by #${tag}`}
         >
           #{tag}
-        </span>
+        </button>
       ))}
     </div>
   );

@@ -1,6 +1,7 @@
 'use client';
 
 import { Archive, Hash, House, Star } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 import { useBookmarks } from '@/features/saves/hooks';
 import { useSavesStore } from '@/features/saves/store';
@@ -14,11 +15,26 @@ const categories: Array<{ key: SavesCategory; label: string; Icon: typeof House 
 ];
 
 export function Sidebar() {
+  const router = useRouter();
   const { data: bookmarks = [] } = useBookmarks();
   const category = useSavesStore((s) => s.category);
   const tagFilter = useSavesStore((s) => s.tagFilter);
   const setCategory = useSavesStore((s) => s.setCategory);
-  const setTagFilter = useSavesStore((s) => s.setTagFilter);
+
+  function selectCategory(key: SavesCategory) {
+    // Push the URL update first so the route is already transitioning by the
+    // time setCategory clears tagFilter in the store. Avoids a brief render
+    // where the list is unfiltered but the URL still reads /saves/tags/[tag].
+    if (tagFilter) router.push('/saves');
+    setCategory(key);
+  }
+  function selectTag(tag: string) {
+    if (tagFilter === tag) {
+      router.push('/saves');
+    } else {
+      router.push(`/saves/tags/${encodeURIComponent(tag)}`);
+    }
+  }
 
   const tags = useMemo(() => {
     const set = new Set<string>();
@@ -39,7 +55,7 @@ export function Sidebar() {
               <button
                 key={key}
                 type="button"
-                onClick={() => setCategory(key)}
+                onClick={() => selectCategory(key)}
                 className={cn(
                   'group w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors',
                   active
@@ -72,7 +88,7 @@ export function Sidebar() {
                 <button
                   key={tag}
                   type="button"
-                  onClick={() => setTagFilter(active ? null : tag)}
+                  onClick={() => selectTag(tag)}
                   className={cn(
                     'group w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors',
                     active
