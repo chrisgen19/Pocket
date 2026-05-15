@@ -23,7 +23,7 @@ export function BookmarkCard({
   onToggleArchive,
   onDelete,
 }: BookmarkCardProps) {
-  const [imgSrc, setImgSrc] = useState(bookmark.imageUrl);
+  const [imgSrc, setImgSrc] = useState(bookmark.imageUrl || FALLBACK_IMAGE);
 
   const meta = (
     <div className="flex items-center mb-2 text-xs font-medium text-gray-500 uppercase tracking-wide w-full">
