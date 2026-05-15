@@ -22,8 +22,23 @@ const USER_AGENT = 'Mozilla/5.0 (compatible; PocketBot/0.1; +https://github.com/
 // thumbnail when the page exposes no og:image / twitter:image / body image.
 // First request for a new URL may return a placeholder for ~30s while their
 // service generates the real screenshot; subsequent loads serve the cached image.
+//
+// We strip query strings and fragments so we don't disclose tokens/identifiers
+// (auth tokens, tracking params, anchors) to a third-party service. The
+// resulting screenshot is keyed by origin + pathname, which is what most
+// articles render the same content for anyway.
 function buildScreenshotUrl(target: string): string {
-  return `https://s.wordpress.com/mshots/v1/${encodeURIComponent(target)}?w=600`;
+  let canonical = target;
+  try {
+    const u = new URL(target);
+    u.search = '';
+    u.hash = '';
+    canonical = u.toString();
+  } catch {
+    // Fall through with the raw target — URL was already validated upstream
+    // by assertSafeUrl, so this catch is purely defensive.
+  }
+  return `https://s.wordpress.com/mshots/v1/${encodeURIComponent(canonical)}?w=600`;
 }
 
 function decodeEntities(s: string): string {
@@ -76,8 +91,10 @@ function resolveUrl(maybeRelative: string, base: string): string {
 }
 
 const SKIP_IMAGE_RE = /logo|icon|avatar|sprite|banner|badge|pixel|spacer|tracking|button/i;
-// Meta descriptions shorter than this are likely site-wide taglines.
-const SHORT_DESCRIPTION_THRESHOLD = 80;
+// Meta descriptions shorter than this are very likely site-wide taglines
+// (e.g. "Laurent Le Brun's blog", "My personal site"). Authored descriptions
+// for real articles are almost always longer than 40 chars; keep them intact.
+const SHORT_DESCRIPTION_THRESHOLD = 40;
 const EXCERPT_MAX_LENGTH = 280;
 
 // Pull the first substantive paragraph from <article>/<main> (falls back to
