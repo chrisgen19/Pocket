@@ -54,10 +54,15 @@ function pickTitle(html: string): string | null {
 }
 
 function resolveUrl(maybeRelative: string, base: string): string {
+  // Some sites use unencoded spaces in og:image paths. Encode the path
+  // portion only so new URL() can parse it, then return the normalised href.
+  const encoded = maybeRelative.replace(/[^\x21-\x7E]|[ <>{}|\\^`]/g, (c) =>
+    encodeURIComponent(c),
+  );
   try {
-    return new URL(maybeRelative, base).toString();
+    return new URL(encoded, base).href;
   } catch {
-    return maybeRelative;
+    return encoded;
   }
 }
 
