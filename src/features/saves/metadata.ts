@@ -61,6 +61,26 @@ function resolveUrl(maybeRelative: string, base: string): string {
   }
 }
 
+// Extract the first <img> from the page body that isn't a tiny icon/avatar.
+// Skips images with explicit width or height <= 50px.
+function pickFirstBodyImage(html: string, baseUrl: string): string | null {
+  const body = html.match(/<body[\s\S]*$/i)?.[0] ?? html;
+  const imgRe = /<img\s[^>]+>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = imgRe.exec(body)) !== null) {
+    const tag = match[0];
+    const src = tag.match(/\ssrc=["']([^"']+)["']/i)?.[1];
+    if (!src || src.startsWith('data:')) continue;
+
+    const w = Number(tag.match(/\swidth=["']?(\d+)/i)?.[1] ?? 0);
+    const h = Number(tag.match(/\sheight=["']?(\d+)/i)?.[1] ?? 0);
+    if ((w && w <= 50) || (h && h <= 50)) continue;
+
+    return resolveUrl(src, baseUrl);
+  }
+  return null;
+}
+
 type StreamingResponse = {
   body: { getReader(): { read(): Promise<{ done: boolean; value?: Uint8Array }>; cancel(): Promise<void> } } | null;
 };
@@ -151,15 +171,12 @@ export async function fetchLinkMetadata(target: string): Promise<LinkMetadata> {
       pickMeta(html, ['og:title', 'twitter:title']) ?? pickTitle(html) ?? fallback.title;
     const excerpt =
       pickMeta(html, ['og:description', 'twitter:description', 'description']) ?? '';
-    const rawImage = pickMeta(html, ['og:image', 'twitter:image']) ?? '';
+    const rawImage = pickMeta(html, ['og:image', 'twitter:image']);
+    const imageUrl = rawImage
+      ? resolveUrl(rawImage, finalUrl)
+      : (pickFirstBodyImage(html, finalUrl) ?? '');
 
-    return {
-      url: target,
-      title,
-      domain,
-      excerpt,
-      imageUrl: rawImage ? resolveUrl(rawImage, finalUrl) : '',
-    };
+    return { url: target, title, domain, excerpt, imageUrl };
   } catch (err) {
     // Re-throw unsafe-URL errors so the route handler can return a 400.
     if (err instanceof UnsafeUrlError) throw err;
