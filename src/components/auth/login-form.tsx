@@ -7,18 +7,7 @@ import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { signIn } from '@/lib/auth-client';
-
-// Reject anything that isn't an app-relative path: bare paths only, no
-// protocol schemes (javascript:, data:), no protocol-relative URLs (//host),
-// no Windows-style escapes, no CR/LF (header-injection paranoia). Falls back
-// to /saves otherwise.
-function sanitizeNext(raw: string | null): string {
-  if (!raw) return '/saves';
-  if (!raw.startsWith('/')) return '/saves';
-  if (raw.startsWith('//') || raw.startsWith('/\\')) return '/saves';
-  if (/[\r\n]/.test(raw)) return '/saves';
-  return raw;
-}
+import { sanitizeNext } from '@/lib/auth-redirect';
 
 export function LoginForm() {
   const router = useRouter();

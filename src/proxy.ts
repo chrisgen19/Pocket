@@ -1,10 +1,9 @@
 import { getSessionCookie } from 'better-auth/cookies';
 import { type NextRequest, NextResponse } from 'next/server';
-
-const PROTECTED_PREFIXES = ['/saves'];
+import { buildLoginNext, isProtectedPath } from '@/lib/auth-redirect';
 
 export function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const { pathname, search } = request.nextUrl;
 
   // getSessionCookie only checks presence, not signature — sufficient for
   // protecting routes (the API verifies the session for real). We do NOT
@@ -14,10 +13,10 @@ export function proxy(request: NextRequest) {
   const sessionCookie = getSessionCookie(request);
   const isAuthed = Boolean(sessionCookie);
 
-  if (!isAuthed && PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+  if (!isAuthed && isProtectedPath(pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
-    url.searchParams.set('next', pathname);
+    url.searchParams.set('next', buildLoginNext(pathname, search));
     return NextResponse.redirect(url);
   }
 

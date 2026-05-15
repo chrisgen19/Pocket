@@ -9,6 +9,7 @@
     "lint": "biome lint .",
     "format": "biome format --write .",
     "check": "biome check --write .",
+    "test": "tsc -p tsconfig.test.json && node --test .test-build/tests/auth-redirect.test.js .test-build/tests/auth-route-guard.test.js",
     "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
