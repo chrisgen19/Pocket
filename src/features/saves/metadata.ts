@@ -61,13 +61,19 @@ function resolveUrl(maybeRelative: string, base: string): string {
   }
 }
 
-// Extract the first <img> from the page body that isn't a tiny icon/avatar.
-// Skips images with explicit width or height <= 50px.
+const SKIP_IMAGE_RE = /logo|icon|avatar|sprite|banner|badge|pixel|spacer|tracking|button/i;
+
+// Extract the first content <img> from the page.
+// Prefers images inside <article> or <main>; falls back to full <body>.
+// Skips data URIs, tiny images (explicit w/h <= 50px), and common chrome assets.
 function pickFirstBodyImage(html: string, baseUrl: string): string | null {
-  const body = html.match(/<body[\s\S]*$/i)?.[0] ?? html;
+  const contentMatch =
+    html.match(/<(?:article|main)\b[^>]*>([\s\S]*?)<\/(?:article|main)>/i);
+  const scope = contentMatch ? contentMatch[0] : (html.match(/<body[\s\S]*$/i)?.[0] ?? html);
+
   const imgRe = /<img\s[^>]+>/gi;
   let match: RegExpExecArray | null;
-  while ((match = imgRe.exec(body)) !== null) {
+  while ((match = imgRe.exec(scope)) !== null) {
     const tag = match[0];
     const src = tag.match(/\ssrc=["']([^"']+)["']/i)?.[1];
     if (!src || src.startsWith('data:')) continue;
@@ -75,6 +81,10 @@ function pickFirstBodyImage(html: string, baseUrl: string): string | null {
     const w = Number(tag.match(/\swidth=["']?(\d+)/i)?.[1] ?? 0);
     const h = Number(tag.match(/\sheight=["']?(\d+)/i)?.[1] ?? 0);
     if ((w && w <= 50) || (h && h <= 50)) continue;
+
+    const cls = tag.match(/\sclass=["']([^"']*)["']/i)?.[1] ?? '';
+    const id = tag.match(/\sid=["']([^"']*)["']/i)?.[1] ?? '';
+    if (SKIP_IMAGE_RE.test(src) || SKIP_IMAGE_RE.test(cls) || SKIP_IMAGE_RE.test(id)) continue;
 
     return resolveUrl(src, baseUrl);
   }
