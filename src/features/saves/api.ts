@@ -55,11 +55,6 @@ export async function updateBookmark(
   return toBookmark(await handle<BookmarkDTO>(res));
 }
 
-export async function listTags(): Promise<string[]> {
-  const res = await fetch('/api/tags', { credentials: 'include' });
-  return handle<string[]>(res);
-}
-
 export async function deleteBookmark(id: string): Promise<void> {
   const res = await fetch(`/api/bookmarks/${id}`, {
     method: 'DELETE',

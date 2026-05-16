@@ -2,7 +2,7 @@
 
 import { Link as LinkIcon, Loader2, Plus } from 'lucide-react';
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
-import { useCreateBookmark, useTags } from '@/features/saves/hooks';
+import { useCreateBookmark } from '@/features/saves/hooks';
 import { parseTags } from '@/features/saves/utils';
 import { TagInput } from './tag-input';
 
@@ -10,13 +10,16 @@ export type AddBookmarkFormHandle = {
   focus: () => void;
 };
 
-export const AddBookmarkForm = forwardRef<AddBookmarkFormHandle>(
-  function AddBookmarkForm(_props, ref) {
+type AddBookmarkFormProps = {
+  tagSuggestions?: string[];
+};
+
+export const AddBookmarkForm = forwardRef<AddBookmarkFormHandle, AddBookmarkFormProps>(
+  function AddBookmarkForm({ tagSuggestions = [] }, ref) {
     const urlRef = useRef<HTMLInputElement>(null);
     const [url, setUrl] = useState('');
     const [tags, setTags] = useState('');
     const createMutation = useCreateBookmark();
-    const { data: tagSuggestions = [] } = useTags();
 
     useImperativeHandle(ref, () => ({
       focus: () => {

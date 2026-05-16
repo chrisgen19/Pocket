@@ -61,6 +61,19 @@ export function SavesView({ initialTag }: SavesViewProps = {}) {
 
   const bookmarks = bookmarksQuery.data ?? [];
 
+  // Derive distinct tags from the already-loaded bookmarks. Avoids a separate
+  // /api/tags request and naturally fails closed for unauthenticated users
+  // (no bookmarks → no suggestions).
+  const tagSuggestions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const b of bookmarks) {
+      for (const tag of b.tags) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([tag]) => tag);
+  }, [bookmarks]);
+
   const visible = useMemo(() => {
     let list = bookmarks;
     if (category === 'home') list = list.filter((b) => !b.isArchived);
@@ -82,7 +95,7 @@ export function SavesView({ initialTag }: SavesViewProps = {}) {
         <Sidebar />
 
         <main className="flex-grow">
-          <AddBookmarkForm ref={formRef} />
+          <AddBookmarkForm ref={formRef} tagSuggestions={tagSuggestions} />
 
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold text-gray-900">My Saves</h1>
