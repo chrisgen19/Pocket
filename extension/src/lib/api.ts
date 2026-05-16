@@ -31,6 +31,14 @@ export async function getSession(): Promise<SessionResponse> {
   }
 }
 
+export async function listTags(): Promise<string[]> {
+  try {
+    return await request<string[]>('/api/tags');
+  } catch {
+    return [];
+  }
+}
+
 export async function createBookmark(input: CreateBookmarkInput) {
   const parsed = createBookmarkSchema.parse(input);
   return request('/api/bookmarks', {
