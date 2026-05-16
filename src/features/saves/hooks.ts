@@ -11,6 +11,10 @@ export function useBookmarks() {
   return useQuery({ queryKey: KEY, queryFn: api.listBookmarks });
 }
 
+export function useTags() {
+  return useQuery({ queryKey: ['tags'] as const, queryFn: api.listTags });
+}
+
 export function useCreateBookmark() {
   const qc = useQueryClient();
   const showToast = useToastStore((s) => s.show);
@@ -18,6 +22,7 @@ export function useCreateBookmark() {
     mutationFn: (input: CreateBookmarkInput) => api.createBookmark(input),
     onSuccess: (bookmark) => {
       qc.setQueryData<Bookmark[]>(KEY, (prev) => (prev ? [bookmark, ...prev] : [bookmark]));
+      qc.invalidateQueries({ queryKey: ['tags'] });
       showToast('URL saved');
     },
     onError: (err) => showToast(err instanceof Error ? err.message : 'Failed to save URL'),
@@ -46,6 +51,7 @@ export function useUpdateBookmark() {
       qc.setQueryData<Bookmark[]>(KEY, (prev) =>
         prev?.map((b) => (b.id === updated.id ? updated : b)),
       );
+      if (patch.tags !== undefined) qc.invalidateQueries({ queryKey: ['tags'] });
       if (patch.isFavorite !== undefined) {
         showToast(updated.isFavorite ? 'Added to Favorites' : 'Removed from Favorites');
       } else if (patch.isArchived !== undefined) {
@@ -70,6 +76,9 @@ export function useDeleteBookmark() {
       if (ctx?.previous) qc.setQueryData(KEY, ctx.previous);
       showToast(err instanceof Error ? err.message : 'Delete failed');
     },
-    onSuccess: () => showToast('Item deleted'),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tags'] });
+      showToast('Item deleted');
+    },
   });
 }

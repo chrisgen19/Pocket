@@ -1,9 +1,10 @@
 'use client';
 
-import { Link as LinkIcon, Loader2, Plus, Tag } from 'lucide-react';
+import { Link as LinkIcon, Loader2, Plus } from 'lucide-react';
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
-import { useCreateBookmark } from '@/features/saves/hooks';
+import { useCreateBookmark, useTags } from '@/features/saves/hooks';
 import { parseTags } from '@/features/saves/utils';
+import { TagInput } from './tag-input';
 
 export type AddBookmarkFormHandle = {
   focus: () => void;
@@ -15,6 +16,7 @@ export const AddBookmarkForm = forwardRef<AddBookmarkFormHandle>(
     const [url, setUrl] = useState('');
     const [tags, setTags] = useState('');
     const createMutation = useCreateBookmark();
+    const { data: tagSuggestions = [] } = useTags();
 
     useImperativeHandle(ref, () => ({
       focus: () => {
@@ -60,18 +62,12 @@ export const AddBookmarkForm = forwardRef<AddBookmarkFormHandle>(
               className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 sm:text-sm disabled:opacity-60"
             />
           </div>
-          <div className="flex-grow relative sm:max-w-xs">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Tag className="w-4 h-4 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Tags (comma separated)..."
+          <div className="flex-grow sm:max-w-xs">
+            <TagInput
               value={tags}
-              onChange={(e) => setTags(e.target.value)}
+              onChange={setTags}
+              suggestions={tagSuggestions}
               disabled={submitting}
-              autoComplete="off"
-              className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 sm:text-sm disabled:opacity-60"
             />
           </div>
           <button

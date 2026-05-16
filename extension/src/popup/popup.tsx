@@ -1,7 +1,8 @@
 import { Bookmark, Check, ExternalLink, Loader2, LogIn, UserPlus } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { createBookmark, getSession, type SessionResponse } from '@/lib/api';
+import { createBookmark, getSession, listTags, type SessionResponse } from '@/lib/api';
 import { LOGIN_URL, REGISTER_URL, SAVES_URL } from '@/lib/config';
+import { TagInput } from './tag-input';
 
 type Status = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -9,11 +10,15 @@ export function Popup() {
   const [session, setSession] = useState<SessionResponse | undefined>(undefined);
   const [tab, setTab] = useState<chrome.tabs.Tab | null>(null);
   const [tagsInput, setTagsInput] = useState('');
+  const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
   const [status, setStatus] = useState<Status>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
-    void getSession().then(setSession);
+    void getSession().then((s) => {
+      setSession(s);
+      if (s?.user) void listTags().then(setTagSuggestions);
+    });
     chrome.tabs.query({ active: true, currentWindow: true }).then(([t]) => setTab(t ?? null));
   }, []);
 
@@ -77,12 +82,11 @@ export function Popup() {
 
         <label className="block space-y-1">
           <span className="text-xs font-medium text-neutral-700">Tags (comma-separated)</span>
-          <input
-            type="text"
+          <TagInput
             value={tagsInput}
-            onChange={(e) => setTagsInput(e.target.value)}
-            placeholder="read-later, design"
-            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
+            onChange={setTagsInput}
+            suggestions={tagSuggestions}
+            disabled={status === 'saving'}
           />
         </label>
 
