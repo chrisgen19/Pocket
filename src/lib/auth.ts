@@ -13,6 +13,13 @@ export const auth = betterAuth({
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.BETTER_AUTH_URL,
   trustedOrigins: extensionIds.map((id) => `chrome-extension://${id}`),
+  advanced: {
+    defaultCookieAttributes: {
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+    },
+  },
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false,
