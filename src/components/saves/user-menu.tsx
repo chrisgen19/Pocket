@@ -59,7 +59,7 @@ export function UserMenu() {
   const initial = (session.user.name || session.user.email || '?').charAt(0).toUpperCase();
 
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger
         className="w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
         aria-label="Account menu"
