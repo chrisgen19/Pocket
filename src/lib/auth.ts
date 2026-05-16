@@ -3,10 +3,23 @@ import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { env } from './env';
 import { prisma } from './prisma';
 
+const extensionIds = (process.env.EXTENSION_IDS ?? '')
+  .split(',')
+  .map((id) => id.trim())
+  .filter(Boolean);
+
 export const auth = betterAuth({
   database: prismaAdapter(prisma, { provider: 'postgresql' }),
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.BETTER_AUTH_URL,
+  trustedOrigins: extensionIds.map((id) => `chrome-extension://${id}`),
+  advanced: {
+    defaultCookieAttributes: {
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+    },
+  },
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false,
