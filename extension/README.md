@@ -12,8 +12,8 @@ MV3 Chrome extension that saves the active tab to your Pocket account.
 Cookie-based session reused from the web app. The popup calls `GET /api/auth/get-session`; if no session, it shows a **Sign in** / **Create account** gate that opens the web app's `/login` or `/register`.
 
 For this to work the web app needs:
-- CORS reflection for `chrome-extension://*` on `/api/*` (see `src/middleware.ts`)
-- The extension origin added to Better Auth `trustedOrigins` (see `src/lib/auth.ts`)
+- CORS allowlist gated on `EXTENSION_IDS` for `/api/*` (see `src/proxy.ts`) — only origins matching `chrome-extension://${id}` for IDs in `EXTENSION_IDS` get credentialed CORS headers
+- The same extension IDs added to Better Auth `trustedOrigins` (see `src/lib/auth.ts`)
 
 ## Develop
 

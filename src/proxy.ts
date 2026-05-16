@@ -2,20 +2,28 @@ import { getSessionCookie } from 'better-auth/cookies';
 import { type NextRequest, NextResponse } from 'next/server';
 
 const PROTECTED_PREFIXES = ['/saves'];
-const EXTENSION_ORIGIN_PREFIX = 'chrome-extension://';
+
+const ALLOWED_EXTENSION_ORIGINS = new Set(
+  (process.env.EXTENSION_IDS ?? '')
+    .split(',')
+    .map((id) => id.trim())
+    .filter(Boolean)
+    .map((id) => `chrome-extension://${id}`),
+);
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const origin = request.headers.get('origin') ?? '';
-  const isExtension = origin.startsWith(EXTENSION_ORIGIN_PREFIX);
+  const isAllowedExtension = ALLOWED_EXTENSION_ORIGINS.has(origin);
 
-  // CORS for the Chrome extension — handle preflight + reflect on /api/*.
+  // CORS for the Chrome extension — only allow origins in EXTENSION_IDS so we
+  // don't hand credentialed responses to every installed extension.
   if (pathname.startsWith('/api/')) {
-    if (request.method === 'OPTIONS' && isExtension) {
+    if (request.method === 'OPTIONS' && isAllowedExtension) {
       return new NextResponse(null, { status: 204, headers: corsHeaders(origin, request) });
     }
     const response = NextResponse.next();
-    if (isExtension) {
+    if (isAllowedExtension) {
       for (const [k, v] of Object.entries(corsHeaders(origin, request))) {
         response.headers.set(k, v);
       }
