@@ -19,7 +19,7 @@ export function Navbar({ onAddClick }: NavbarProps) {
             <span className="font-bold text-xl tracking-tight text-gray-900">Saves</span>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-4">
             <button
               type="button"
               onClick={onAddClick}
