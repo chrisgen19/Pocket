@@ -7,7 +7,7 @@ import { defineConfig, loadEnv } from 'vite';
 export default defineConfig(async ({ mode }) => {
   // Load `.env` into process.env so manifest.config.ts (dynamically imported
   // below) can read VITE_API_BASE_URL — Vite only exposes it via import.meta.env.
-  const env = loadEnv(mode, process.cwd(), 'VITE_');
+  const env = loadEnv(mode, fileURLToPath(new URL('.', import.meta.url)), 'VITE_');
   if (env.VITE_API_BASE_URL) {
     process.env.VITE_API_BASE_URL = env.VITE_API_BASE_URL;
   }
