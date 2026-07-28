@@ -1,0 +1,22 @@
+# `packages` is required: pnpm 9 (which the Coolify build container runs) treats the
+# presence of this file as a workspace root and hard-fails with "packages field missing
+# or empty" without it. Only the root is listed, so extension/ keeps installing
+# independently exactly as it does today rather than becoming a workspace member.
+packages:
+  - '.'
+
+# pnpm 11 moved build-script approval out of package.json (`pnpm.ignoredBuiltDependencies`,
+# which pnpm 11 no longer reads) into this file. Without explicit booleans here, pnpm 11
+# aborts every script with ERR_PNPM_IGNORED_BUILDS.
+#
+# The `pnpm` field in package.json is intentionally left in place: the Coolify build
+# container still runs pnpm 9, which reads it.
+allowBuilds:
+  # Prisma must run its postinstall to fetch and prepare the query engines.
+  '@prisma/engines': true
+  prisma: true
+  # msw's postinstall writes its service worker into public/.
+  msw: true
+  # Left disabled to match the existing `ignoredBuiltDependencies` in package.json, so
+  # local installs behave the same as the production build.
+  sharp: false

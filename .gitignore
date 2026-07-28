@@ -42,3 +42,6 @@ next-env.d.ts
 
 /src/generated/prisma
 .claude/
+
+# compiled output from the node:test run
+.test-build/
