@@ -4,6 +4,8 @@ import { createBookmark, getSession, listTags, type SessionResponse } from '@/li
 import { LOGIN_URL, REGISTER_URL, SAVES_URL } from '@/lib/config';
 import { TagInput } from './tag-input';
 
+const TAGS_INPUT_ID = 'tags-input';
+
 type Status = 'idle' | 'saving' | 'saved' | 'error';
 
 export function Popup() {
@@ -80,15 +82,18 @@ export function Popup() {
           <div className="truncate text-xs text-neutral-500">{url}</div>
         </div>
 
-        <label className="block space-y-1">
-          <span className="text-xs font-medium text-neutral-700">Tags (comma-separated)</span>
+        <div className="space-y-1">
+          <label htmlFor={TAGS_INPUT_ID} className="block text-xs font-medium text-neutral-700">
+            Tags (comma-separated)
+          </label>
           <TagInput
+            id={TAGS_INPUT_ID}
             value={tagsInput}
             onChange={setTagsInput}
             suggestions={tagSuggestions}
             disabled={status === 'saving'}
           />
-        </label>
+        </div>
 
         {status === 'error' && (
           <div className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">{errorMsg}</div>

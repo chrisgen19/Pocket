@@ -106,8 +106,7 @@ function pickFirstBodyParagraph(html: string): string | null {
     html;
 
   const pRe = /<p\b[^>]*>([\s\S]*?)<\/p>/gi;
-  let match: RegExpExecArray | null;
-  while ((match = pRe.exec(scope)) !== null) {
+  for (const match of scope.matchAll(pRe)) {
     const text = decodeEntities(
       match[1]
         .replace(/<[^>]+>/g, ' ')
@@ -132,8 +131,7 @@ function pickFirstBodyImage(html: string, baseUrl: string): string | null {
   const scope = contentMatch ? contentMatch[0] : (html.match(/<body[\s\S]*$/i)?.[0] ?? html);
 
   const imgRe = /<img\s[^>]+>/gi;
-  let match: RegExpExecArray | null;
-  while ((match = imgRe.exec(scope)) !== null) {
+  for (const match of scope.matchAll(imgRe)) {
     const tag = match[0];
     const src = tag.match(/\ssrc=["']([^"']+)["']/i)?.[1];
     if (!src || src.startsWith('data:')) continue;

@@ -1,7 +1,7 @@
 'use client';
 
 import { Tag } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 type Props = {
   value: string;
@@ -23,7 +23,12 @@ export function TagInput({ value, onChange, suggestions, disabled, placeholder }
     value,
   ]);
 
-  useEffect(() => setActiveIdx(0), [current]);
+  // Reset the highlighted suggestion whenever the token being typed changes.
+  const [prevCurrent, setPrevCurrent] = useState(current);
+  if (current !== prevCurrent) {
+    setPrevCurrent(current);
+    setActiveIdx(0);
+  }
 
   function commit(tag: string) {
     const next = `${before}${tag}, `;
