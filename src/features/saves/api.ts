@@ -42,10 +42,7 @@ export async function createBookmark(input: CreateBookmarkInput): Promise<Bookma
   return toBookmark(await handle<BookmarkDTO>(res));
 }
 
-export async function updateBookmark(
-  id: string,
-  patch: UpdateBookmarkInput,
-): Promise<Bookmark> {
+export async function updateBookmark(id: string, patch: UpdateBookmarkInput): Promise<Bookmark> {
   const res = await fetch(`/api/bookmarks/${id}`, {
     method: 'PATCH',
     credentials: 'include',

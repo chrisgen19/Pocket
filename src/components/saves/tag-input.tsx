@@ -17,11 +17,10 @@ export function TagInput({ value, onChange, suggestions, disabled, placeholder }
   const [activeIdx, setActiveIdx] = useState(0);
 
   const { before, current } = splitAtCursor(value);
-  const matches = useMemo(() => filterSuggestions(suggestions, current, value), [
-    suggestions,
-    current,
-    value,
-  ]);
+  const matches = useMemo(
+    () => filterSuggestions(suggestions, current, value),
+    [suggestions, current, value],
+  );
 
   // Reset the highlighted suggestion whenever the token being typed changes.
   const [prevCurrent, setPrevCurrent] = useState(current);

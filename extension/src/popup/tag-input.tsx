@@ -77,7 +77,9 @@ export function TagInput({ id, value, onChange, suggestions, disabled, placehold
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => commit(tag)}
                 className={`block w-full px-3 py-1.5 text-left text-xs ${
-                  i === activeIdx ? 'bg-red-50 text-red-700' : 'text-neutral-700 hover:bg-neutral-50'
+                  i === activeIdx
+                    ? 'bg-red-50 text-red-700'
+                    : 'text-neutral-700 hover:bg-neutral-50'
                 }`}
               >
                 {tag}

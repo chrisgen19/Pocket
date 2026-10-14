@@ -55,14 +55,8 @@ function decodeEntities(s: string): string {
 function pickMeta(html: string, names: string[]): string | null {
   for (const name of names) {
     const patterns = [
-      new RegExp(
-        `<meta[^>]+(?:property|name)=["']${name}["'][^>]*content=["']([^"']+)["']`,
-        'i',
-      ),
-      new RegExp(
-        `<meta[^>]+content=["']([^"']+)["'][^>]*(?:property|name)=["']${name}["']`,
-        'i',
-      ),
+      new RegExp(`<meta[^>]+(?:property|name)=["']${name}["'][^>]*content=["']([^"']+)["']`, 'i'),
+      new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]*(?:property|name)=["']${name}["']`, 'i'),
     ];
     for (const re of patterns) {
       const m = html.match(re);
@@ -80,9 +74,7 @@ function pickTitle(html: string): string | null {
 function resolveUrl(maybeRelative: string, base: string): string {
   // Some sites use unencoded spaces in og:image paths. Encode the path
   // portion only so new URL() can parse it, then return the normalised href.
-  const encoded = maybeRelative.replace(/[^\x21-\x7E]|[ <>{}|\\^`]/g, (c) =>
-    encodeURIComponent(c),
-  );
+  const encoded = maybeRelative.replace(/[^\x21-\x7E]|[ <>{}|\\^`]/g, (c) => encodeURIComponent(c));
   try {
     return new URL(encoded, base).href;
   } catch {
@@ -126,8 +118,7 @@ function pickFirstBodyParagraph(html: string): string | null {
 // Prefers images inside <article> or <main>; falls back to full <body>.
 // Skips data URIs, tiny images (explicit w/h <= 50px), and common chrome assets.
 function pickFirstBodyImage(html: string, baseUrl: string): string | null {
-  const contentMatch =
-    html.match(/<(?:article|main)\b[^>]*>([\s\S]*?)<\/(?:article|main)>/i);
+  const contentMatch = html.match(/<(?:article|main)\b[^>]*>([\s\S]*?)<\/(?:article|main)>/i);
   const scope = contentMatch ? contentMatch[0] : (html.match(/<body[\s\S]*$/i)?.[0] ?? html);
 
   const imgRe = /<img\s[^>]+>/gi;
@@ -150,7 +141,12 @@ function pickFirstBodyImage(html: string, baseUrl: string): string | null {
 }
 
 type StreamingResponse = {
-  body: { getReader(): { read(): Promise<{ done: boolean; value?: Uint8Array }>; cancel(): Promise<void> } } | null;
+  body: {
+    getReader(): {
+      read(): Promise<{ done: boolean; value?: Uint8Array }>;
+      cancel(): Promise<void>;
+    };
+  } | null;
 };
 
 async function readCapped(res: StreamingResponse, max: number): Promise<string> {
@@ -237,7 +233,11 @@ export async function fetchLinkMetadata(target: string): Promise<LinkMetadata> {
     const { url: finalUrl, html } = result;
     const title =
       pickMeta(html, ['og:title', 'twitter:title']) ?? pickTitle(html) ?? fallback.title;
-    const metaDescription = pickMeta(html, ['og:description', 'twitter:description', 'description']);
+    const metaDescription = pickMeta(html, [
+      'og:description',
+      'twitter:description',
+      'description',
+    ]);
     // If the meta description is missing or short enough to be a generic
     // site tagline, prefer the first substantive paragraph of the article.
     const excerpt =

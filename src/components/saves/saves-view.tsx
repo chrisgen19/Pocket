@@ -4,11 +4,7 @@ import { LayoutGrid, List, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef } from 'react';
-import {
-  useBookmarks,
-  useDeleteBookmark,
-  useUpdateBookmark,
-} from '@/features/saves/hooks';
+import { useBookmarks, useDeleteBookmark, useUpdateBookmark } from '@/features/saves/hooks';
 import { useSavesStore } from '@/features/saves/store';
 import { isApiError } from '@/lib/api-error';
 import { cn } from '@/lib/utils';
@@ -25,7 +21,10 @@ function emptyCopy(category: string, tagFilter: string | null) {
       description: 'Try saving some items with this tag.',
     };
   if (category === 'favorites')
-    return { title: 'No favorites yet', description: 'Click the star icon on a save to add it here.' };
+    return {
+      title: 'No favorites yet',
+      description: 'Click the star icon on a save to add it here.',
+    };
   if (category === 'archive')
     return { title: 'Archive is empty', description: 'Items you archive will appear here.' };
   return { title: 'No saves yet', description: 'Save articles, videos, and more from the web.' };
@@ -143,7 +142,9 @@ export function SavesView({ initialTag }: SavesViewProps = {}) {
           ) : error ? (
             <div className="text-center py-20">
               <h3 className="text-lg font-medium text-gray-900">Something went wrong</h3>
-              <p className="mt-1 text-gray-500">{error instanceof Error ? error.message : 'Unknown error'}</p>
+              <p className="mt-1 text-gray-500">
+                {error instanceof Error ? error.message : 'Unknown error'}
+              </p>
             </div>
           ) : visible.length === 0 ? (
             <EmptyState title={empty.title} description={empty.description} />
