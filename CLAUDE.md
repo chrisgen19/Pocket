@@ -116,6 +116,19 @@ src/
 
 When the API arrives, the Zustand store in `src/features/saves/store.ts` should become a thin client cache around TanStack Query, and `localStorage` persistence should be dropped.
 
+## Extension
+
+`extension/` holds the MV3 Chrome extension (Vite + `@crxjs/vite-plugin`, React 19, Tailwind v4, Zod). It saves the active tab to Pocket. See `extension/README.md` for full setup.
+
+- **Installs separately:** not a pnpm workspace member (`pnpm-workspace.yaml` lists only `.`) and has its own `pnpm-lock.yaml`. Excluded from the root `tsconfig.json`, so root `tsc` does not check it. Work inside the folder: `cd extension && pnpm install`, then `pnpm dev` / `pnpm build` / `pnpm typecheck`.
+- **Config:** `extension/.env` (gitignored, copy from `.env.example`) sets `VITE_API_BASE_URL` to the web app origin.
+- **Auth:** reuses the web app's Better Auth cookie session via `GET /api/auth/get-session`.
+- **Server wiring:** the web app's `EXTENSION_IDS` env var (comma-separated extension IDs, optional, Zod-validated in `src/lib/env.ts` as 32-char a-p IDs and exposed as `env.EXTENSION_IDS: string[]`) drives both:
+  - `src/proxy.ts`: credentialed CORS on `/api/*` only for `chrome-extension://<id>` origins in the list
+  - `src/lib/auth.ts`: the same origins added to Better Auth `trustedOrigins`
+- A new or changed extension ID (unpacked dev build vs Web Store build) must be added to `EXTENSION_IDS`, or the popup's API calls fail CORS/origin checks.
+- `extension/src/shared/schemas.ts` mirrors `src/features/saves/schemas.ts`: keep them in sync when request payloads change.
+
 ## TODO — Roadmap
 
 ### App shell / pages
