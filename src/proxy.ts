@@ -1,14 +1,11 @@
 import { getSessionCookie } from 'better-auth/cookies';
 import { type NextRequest, NextResponse } from 'next/server';
+import { env } from '@/lib/env';
 
 const PROTECTED_PREFIXES = ['/saves'];
 
 const ALLOWED_EXTENSION_ORIGINS = new Set(
-  (process.env.EXTENSION_IDS ?? '')
-    .split(',')
-    .map((id) => id.trim())
-    .filter(Boolean)
-    .map((id) => `chrome-extension://${id}`),
+  env.EXTENSION_IDS.map((id) => `chrome-extension://${id}`),
 );
 
 export function proxy(request: NextRequest) {
