@@ -88,6 +88,7 @@ export function ApiKeysPanel({ shortcutUrl }: ApiKeysPanelProps) {
       {shortcutUrl && (
         <AddToIphoneButton
           shortcutUrl={shortcutUrl}
+          disabled={create.isPending}
           createKey={() => create.mutateAsync(SHORTCUT_KEY_NAME)}
         />
       )}

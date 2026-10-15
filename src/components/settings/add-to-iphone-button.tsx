@@ -6,6 +6,8 @@ import { useState } from 'react';
 type AddToIphoneButtonProps = {
   /** Shared iCloud link of the "Save to Pocket" shortcut. */
   shortcutUrl: string;
+  /** True while another key is being created, so one tap can't start a second key. */
+  disabled?: boolean;
   /** Creates a new API key and resolves with the raw key. */
   createKey: () => Promise<string>;
 };
@@ -32,7 +34,7 @@ const copyWhenReady = async (text: Promise<string>): Promise<boolean> => {
 };
 
 /** Creates a key, copies it and opens the shared shortcut so the user only has to paste. */
-export function AddToIphoneButton({ shortcutUrl, createKey }: AddToIphoneButtonProps) {
+export function AddToIphoneButton({ shortcutUrl, disabled, createKey }: AddToIphoneButtonProps) {
   const [pending, setPending] = useState(false);
 
   async function addToIphone() {
@@ -53,7 +55,7 @@ export function AddToIphoneButton({ shortcutUrl, createKey }: AddToIphoneButtonP
       <button
         type="button"
         onClick={addToIphone}
-        disabled={pending}
+        disabled={pending || disabled}
         className="flex flex-shrink-0 items-center justify-center gap-2 rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-60"
       >
         {pending ? (
