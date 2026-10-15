@@ -14,7 +14,9 @@ export const splitAtCursor = (value: string): { before: string; current: string 
   const lastComma = value.lastIndexOf(',');
   if (lastComma === -1) return { before: '', current: value.trimStart() };
   return {
-    before: value.slice(0, lastComma + 1) + (value[lastComma + 1] === ' ' ? '' : ' '),
+    // The slice stops at the comma, so always add one space: skipping it when one
+    // followed the comma used to drop that space ("reference, d" -> "reference,design, ").
+    before: `${value.slice(0, lastComma + 1)} `,
     current: value.slice(lastComma + 1).trim(),
   };
 };
