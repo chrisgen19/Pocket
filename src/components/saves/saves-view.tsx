@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useRef } from 'react';
 import { useBookmarks, useDeleteBookmark, useUpdateBookmark } from '@/features/saves/hooks';
+import { normalizeTag } from '@/features/saves/schemas';
 import { useSavesStore } from '@/features/saves/store';
 import { isApiError } from '@/lib/api-error';
 import { cn } from '@/lib/utils';
@@ -76,7 +77,12 @@ export function SavesView({ initialTag }: SavesViewProps = {}) {
     if (category === 'home') list = list.filter((b) => !b.isArchived);
     else if (category === 'favorites') list = list.filter((b) => b.isFavorite);
     else if (category === 'archive') list = list.filter((b) => b.isArchived);
-    if (tagFilter) list = list.filter((b) => b.tags.includes(tagFilter));
+    if (tagFilter) {
+      // Case-insensitive: /saves/tags/Design matches "design", and rows saved
+      // before server-side tag normalization still match their lowercase route.
+      const wanted = normalizeTag(tagFilter);
+      list = list.filter((b) => b.tags.some((t) => normalizeTag(t) === wanted));
+    }
     return list;
   }, [bookmarks, category, tagFilter]);
 
