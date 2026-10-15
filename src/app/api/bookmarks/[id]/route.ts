@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { updateBookmarkSchema } from '@/features/saves/schemas';
-import { prisma } from '@/lib/prisma';
+import { isPrismaError, prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/session';
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -40,11 +40,17 @@ export async function DELETE(_request: Request, { params }: Ctx) {
   }
   const { id } = await params;
 
-  const result = await prisma.bookmark.deleteMany({
-    where: { id, userId: session.user.id },
-  });
-  if (result.count === 0) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  // delete() (not deleteMany) so the removed row comes back in one query: the
+  // client keeps it for the undo toast, which sends it to /api/bookmarks/restore.
+  try {
+    const bookmark = await prisma.bookmark.delete({
+      where: { id, userId: session.user.id },
+    });
+    return NextResponse.json({ ok: true, bookmark });
+  } catch (err) {
+    if (isPrismaError(err, 'P2025')) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+    throw err;
   }
-  return NextResponse.json({ ok: true });
 }

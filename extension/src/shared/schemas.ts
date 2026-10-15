@@ -8,7 +8,8 @@ const normalizeTags = (tags: string[]): string[] => [
 ];
 
 export const createBookmarkSchema = z.object({
-  url: z.string().url(),
+  // Same limit as the server (BOOKMARK_FIELD_MAX.url).
+  url: z.string().url().max(8192),
   tags: z
     .array(z.string())
     .transform(normalizeTags)

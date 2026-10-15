@@ -1,15 +1,18 @@
 'use client';
 
 import { Hash } from 'lucide-react';
+import Link from 'next/link';
+import type { SavesCategory } from '@/features/saves/types';
 import { cn } from '@/lib/utils';
 import { SAVES_CATEGORIES, useSavesNav } from './use-saves-nav';
 
 type SidebarProps = {
+  category: SavesCategory;
   tagFilter: string | null;
 };
 
-export function Sidebar({ tagFilter }: SidebarProps) {
-  const { category, tags, selectCategory, selectTag } = useSavesNav(tagFilter);
+export function Sidebar({ category, tagFilter }: SidebarProps) {
+  const { tags, tagHref } = useSavesNav(tagFilter);
 
   return (
     <aside className="w-full lg:w-64 flex-shrink-0 hidden md:block">
@@ -18,13 +21,12 @@ export function Sidebar({ tagFilter }: SidebarProps) {
           My List
         </h2>
         <nav className="space-y-1">
-          {SAVES_CATEGORIES.map(({ key, label, Icon }) => {
+          {SAVES_CATEGORIES.map(({ key, label, href, Icon }) => {
             const active = !tagFilter && category === key;
             return (
-              <button
+              <Link
                 key={key}
-                type="button"
-                onClick={() => selectCategory(key)}
+                href={href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
                   'group w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors',
@@ -40,7 +42,7 @@ export function Sidebar({ tagFilter }: SidebarProps) {
                   )}
                 />
                 {label}
-              </button>
+              </Link>
             );
           })}
         </nav>
@@ -55,10 +57,9 @@ export function Sidebar({ tagFilter }: SidebarProps) {
             tags.map((tag) => {
               const active = tagFilter === tag;
               return (
-                <button
+                <Link
                   key={tag}
-                  type="button"
-                  onClick={() => selectTag(tag)}
+                  href={tagHref(tag)}
                   aria-current={active ? 'page' : undefined}
                   className={cn(
                     'group w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors',
@@ -74,7 +75,7 @@ export function Sidebar({ tagFilter }: SidebarProps) {
                     )}
                   />
                   <span className="truncate">{tag}</span>
-                </button>
+                </Link>
               );
             })
           )}
