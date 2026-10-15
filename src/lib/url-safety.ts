@@ -44,7 +44,12 @@ function isPrivateIPv6(ip: string): boolean {
   const lower = ip.toLowerCase();
   if (lower === '::' || lower === '::1') return true;
   if (lower.startsWith('fc') || lower.startsWith('fd')) return true; // unique local fc00::/7
-  if (lower.startsWith('fe8') || lower.startsWith('fe9') || lower.startsWith('fea') || lower.startsWith('feb')) {
+  if (
+    lower.startsWith('fe8') ||
+    lower.startsWith('fe9') ||
+    lower.startsWith('fea') ||
+    lower.startsWith('feb')
+  ) {
     return true; // link-local fe80::/10
   }
   if (lower.startsWith('ff')) return true; // multicast

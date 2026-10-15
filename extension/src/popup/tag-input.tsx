@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 type Props = {
+  id?: string;
   value: string;
   onChange: (next: string) => void;
   suggestions: string[];
@@ -8,7 +9,7 @@ type Props = {
   placeholder?: string;
 };
 
-export function TagInput({ value, onChange, suggestions, disabled, placeholder }: Props) {
+export function TagInput({ id, value, onChange, suggestions, disabled, placeholder }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
@@ -19,7 +20,12 @@ export function TagInput({ value, onChange, suggestions, disabled, placeholder }
     [suggestions, current, value],
   );
 
-  useEffect(() => setActiveIdx(0), [current]);
+  // Reset the highlighted suggestion whenever the token being typed changes.
+  const [prevCurrent, setPrevCurrent] = useState(current);
+  if (current !== prevCurrent) {
+    setPrevCurrent(current);
+    setActiveIdx(0);
+  }
 
   function commit(tag: string) {
     onChange(`${before}${tag}, `);
@@ -46,6 +52,7 @@ export function TagInput({ value, onChange, suggestions, disabled, placeholder }
   return (
     <div className="relative">
       <input
+        id={id}
         ref={inputRef}
         type="text"
         placeholder={placeholder ?? 'read-later, design'}
@@ -70,7 +77,9 @@ export function TagInput({ value, onChange, suggestions, disabled, placeholder }
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => commit(tag)}
                 className={`block w-full px-3 py-1.5 text-left text-xs ${
-                  i === activeIdx ? 'bg-red-50 text-red-700' : 'text-neutral-700 hover:bg-neutral-50'
+                  i === activeIdx
+                    ? 'bg-red-50 text-red-700'
+                    : 'text-neutral-700 hover:bg-neutral-50'
                 }`}
               >
                 {tag}
