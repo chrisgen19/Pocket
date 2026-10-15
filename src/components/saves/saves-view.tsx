@@ -1,11 +1,11 @@
 'use client';
 
+import { normalizeTag } from '@shared/tags';
 import { LayoutGrid, List, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useRef } from 'react';
 import { useBookmarks, useDeleteBookmark, useUpdateBookmark } from '@/features/saves/hooks';
-import { normalizeTag } from '@/features/saves/schemas';
 import { useSavesStore } from '@/features/saves/store';
 import type { SavesCategory } from '@/features/saves/types';
 import { isApiError } from '@/lib/api-error';

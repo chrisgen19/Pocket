@@ -1,11 +1,8 @@
+import { normalizeTags } from '@shared/tags';
 import { z } from 'zod';
 
-// Mirrors src/features/saves/schemas.ts in the web app.
-// Keep in sync until we promote a shared package.
-// Same tag normalization as the server: trim, lowercase, drop empty, dedupe.
-const normalizeTags = (tags: string[]): string[] => [
-  ...new Set(tags.map((t) => t.trim().toLowerCase()).filter(Boolean)),
-];
+// Mirrors the create schema in src/features/saves/schemas.ts. Tag normalization is
+// the same function, from shared/tags.ts; keep the limits below in sync by hand.
 
 export const createBookmarkSchema = z.object({
   // Same limit and http(s)-only rule as the server (BOOKMARK_FIELD_MAX.url). The popup
