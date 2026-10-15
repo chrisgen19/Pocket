@@ -1,16 +1,14 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { fetchLinkMetadata } from '@/features/saves/metadata';
-import { getSession } from '@/lib/session';
+import { authenticateRequest } from '@/lib/session';
 import { UnsafeUrlError } from '@/lib/url-safety';
 
 const querySchema = z.object({ url: z.string().url() });
 
 export async function GET(request: Request) {
-  const session = await getSession();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const { response } = await authenticateRequest();
+  if (response) return response;
 
   const { searchParams } = new URL(request.url);
   const parsed = querySchema.safeParse({ url: searchParams.get('url') });

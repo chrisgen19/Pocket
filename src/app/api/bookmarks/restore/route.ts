@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { restoreBookmarkSchema } from '@/features/saves/schemas';
 import { isPrismaError, prisma } from '@/lib/prisma';
-import { getSession } from '@/lib/session';
+import { authenticateRequest } from '@/lib/session';
 
 /**
  * POST /api/bookmarks/restore
@@ -11,10 +11,8 @@ import { getSession } from '@/lib/session';
  * session, never the body, so a user can only restore into their own account.
  */
 export async function POST(request: Request) {
-  const session = await getSession();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const { userId, response } = await authenticateRequest();
+  if (response) return response;
 
   const body = await request.json().catch(() => null);
   const parsed = restoreBookmarkSchema.safeParse(body);
@@ -30,7 +28,7 @@ export async function POST(request: Request) {
       data: {
         ...parsed.data,
         createdAt: new Date(parsed.data.createdAt),
-        userId: session.user.id,
+        userId,
       },
     });
     return NextResponse.json(bookmark, { status: 201 });
