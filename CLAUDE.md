@@ -88,6 +88,8 @@ pnpm build                            # production build
 pnpm start                            # serve production build
 pnpm lint                             # biome check: lint + format + import order (read-only)
 pnpm check                            # same checks, applying safe fixes (--write)
+pnpm test                             # Vitest, once (tests/**/*.test.ts)
+pnpm test:watch                       # Vitest in watch mode
 pnpm dlx shadcn@latest add <name>     # add a shadcn component
 ```
 
@@ -168,7 +170,7 @@ Personal API keys let clients that can't carry the session cookie (the iPhone "S
 
 ### Quality / DX
 - [ ] Remove ESLint + `eslint-config-next` from `devDependencies` (Biome is the linter)
-- [ ] Add `pnpm test` (Vitest) once there's logic worth testing
+- [x] Add `pnpm test` (Vitest): `vitest.config.ts` mirrors the `@/` and `@shared/` aliases; tests live in `tests/`, Node environment
 - [ ] Consider Playwright for auth + save flow e2e
 
 ### Open product questions
