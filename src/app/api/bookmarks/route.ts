@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { fetchLinkMetadata } from '@/features/saves/metadata';
-import { createBookmarkSchema } from '@/features/saves/schemas';
+import { createBookmarkSchema, normalizeTags } from '@/features/saves/schemas';
 import { normalizeUrl } from '@/features/saves/utils';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/session';
@@ -46,13 +46,14 @@ export async function POST(request: Request) {
   }
 
   // Upsert: re-saving the same URL refreshes metadata, un-archives the entry,
-  // and merges new tags into the existing set.
+  // and merges new tags into the existing set. Existing tags are normalized too,
+  // so rows saved before normalization don't keep "Design" next to "design".
   const existing = await prisma.bookmark.findUnique({
     where: { userId_url: { userId: session.user.id, url } },
     select: { tags: true },
   });
   const mergedTags = existing
-    ? Array.from(new Set([...existing.tags, ...parsed.data.tags]))
+    ? normalizeTags([...existing.tags, ...parsed.data.tags])
     : parsed.data.tags;
 
   const bookmark = await prisma.bookmark.upsert({
