@@ -7,6 +7,15 @@ const envSchema = z.object({
   BETTER_AUTH_URL: z.string().url(),
   // Comma-separated list. Optional: unset means no extension gets CORS or trusted-origin access.
   EXTENSION_IDS: extensionIdsSchema,
+  // Shared iCloud link of the "Save to Pocket" shortcut. Optional: unset or empty
+  // hides the "Add to iPhone" button on /settings.
+  IOS_SHORTCUT_URL: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z
+      .string()
+      .startsWith('https://www.icloud.com/shortcuts/', 'must be an iCloud shortcut link')
+      .optional(),
+  ),
 });
 
 const parsed = envSchema.safeParse(process.env);
