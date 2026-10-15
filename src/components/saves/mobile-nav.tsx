@@ -16,12 +16,21 @@ const CHIP_IDLE = 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover
 // Ref callback for the active chip: React calls it whenever a different chip becomes
 // active (including once tags load), so a tag far down the row is scrolled into view.
 // Adjusts only the row's scrollLeft (not scrollIntoView) so the page never jumps.
+// The row is display:none at md and up, where it measures zero, so a ResizeObserver
+// re-centers once it becomes visible (e.g. resizing or rotating below md).
 const centerInRow = (chip: HTMLElement | null) => {
   const row = chip?.closest('nav');
   if (!chip || !row) return;
-  const rowRect = row.getBoundingClientRect();
-  const chipRect = chip.getBoundingClientRect();
-  row.scrollLeft += chipRect.left - rowRect.left - (rowRect.width - chipRect.width) / 2;
+  const center = () => {
+    const rowRect = row.getBoundingClientRect();
+    if (rowRect.width === 0) return;
+    const chipRect = chip.getBoundingClientRect();
+    row.scrollLeft += chipRect.left - rowRect.left - (rowRect.width - chipRect.width) / 2;
+  };
+  // observe() also fires once immediately, which covers the initial center.
+  const observer = new ResizeObserver(center);
+  observer.observe(row);
+  return () => observer.disconnect();
 };
 
 // Horizontal, scrollable stand-in for the sidebar below the md breakpoint, where
