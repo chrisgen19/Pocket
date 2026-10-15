@@ -2,6 +2,10 @@
 
 import { Tag } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
+import { filterSuggestions, splitAtCursor } from '@shared/tag-autocomplete';
+
+// Dropdown shows up to 8 matches (max-h-56).
+const SUGGESTION_LIMIT = 8;
 
 type Props = {
   value: string;
@@ -18,7 +22,7 @@ export function TagInput({ value, onChange, suggestions, disabled, placeholder }
 
   const { before, current } = splitAtCursor(value);
   const matches = useMemo(
-    () => filterSuggestions(suggestions, current, value),
+    () => filterSuggestions(suggestions, current, value, SUGGESTION_LIMIT),
     [suggestions, current, value],
   );
 
@@ -94,28 +98,4 @@ export function TagInput({ value, onChange, suggestions, disabled, placeholder }
       )}
     </div>
   );
-}
-
-// Split the tag string at the cursor's last comma so we know which token is being typed.
-function splitAtCursor(value: string) {
-  const lastComma = value.lastIndexOf(',');
-  if (lastComma === -1) return { before: '', current: value.trimStart() };
-  return {
-    before: value.slice(0, lastComma + 1) + (value[lastComma + 1] === ' ' ? '' : ' '),
-    current: value.slice(lastComma + 1).trim(),
-  };
-}
-
-function filterSuggestions(suggestions: string[], current: string, full: string) {
-  const already = new Set(
-    full
-      .split(',')
-      .map((t) => t.trim().toLowerCase())
-      .filter(Boolean),
-  );
-  const q = current.toLowerCase();
-  return suggestions
-    .filter((s) => !already.has(s.toLowerCase()) || s.toLowerCase() === q)
-    .filter((s) => (q ? s.toLowerCase().includes(q) : true))
-    .slice(0, 8);
 }

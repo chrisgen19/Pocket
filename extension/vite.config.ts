@@ -2,7 +2,10 @@ import { fileURLToPath } from 'node:url';
 import { crx } from '@crxjs/vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig, loadEnv, searchForWorkspaceRoot } from 'vite';
+
+// Code shared with the web app (dependency-free), e.g. tag autocomplete.
+const sharedDir = fileURLToPath(new URL('../shared', import.meta.url));
 
 export default defineConfig(async ({ mode }) => {
   // Load `.env` into process.env so manifest.config.ts (dynamically imported
@@ -18,12 +21,16 @@ export default defineConfig(async ({ mode }) => {
     resolve: {
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
+        '@shared': sharedDir,
       },
     },
     server: {
       port: 5173,
       strictPort: true,
       hmr: { port: 5173 },
+      // extension/ is its own workspace root, so the dev server would refuse to serve
+      // ../shared without this.
+      fs: { allow: [searchForWorkspaceRoot(process.cwd()), sharedDir] },
       cors: {
         origin: [/^chrome-extension:\/\//],
       },
