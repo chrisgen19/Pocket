@@ -33,5 +33,26 @@ export const updateBookmarkSchema = z
     message: 'At least one field must be provided',
   });
 
+// Re-inserts a row the user just deleted (the undo toast), with its original id and
+// createdAt. The url is rendered as a link, so only http(s) is accepted; limits are
+// generous so a legitimately stored row is never rejected on restore.
+export const restoreBookmarkSchema = z.object({
+  id: z.string().min(1).max(64),
+  url: z
+    .string()
+    .url()
+    .max(8192)
+    .refine((u) => /^https?:\/\//i.test(u), 'URL must start with http:// or https://'),
+  title: z.string().max(2000),
+  domain: z.string().max(255),
+  excerpt: z.string().max(10_000),
+  imageUrl: z.string().max(16_384),
+  tags: tagsSchema,
+  isFavorite: z.boolean(),
+  isArchived: z.boolean(),
+  createdAt: z.iso.datetime(),
+});
+
 export type CreateBookmarkInput = z.infer<typeof createBookmarkSchema>;
 export type UpdateBookmarkInput = z.infer<typeof updateBookmarkSchema>;
+export type RestoreBookmarkInput = z.infer<typeof restoreBookmarkSchema>;
