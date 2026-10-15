@@ -5,7 +5,8 @@ MV3 Chrome extension that saves the active tab to your Pocket account.
 ## Stack
 - Manifest V3 · Vite · @crxjs/vite-plugin
 - React 19 + TypeScript
-- Tailwind v4 (matches the web app)
+- Tailwind v4 (matches the web app), on the shared design tokens in `../shared/tokens.css`
+- Hanken Grotesk and Newsreader self-hosted in `public/fonts/` (OFL)
 - Zod (validation, mirrors `src/features/saves/schemas.ts`)
 
 ## Auth

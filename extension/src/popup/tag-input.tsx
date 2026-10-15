@@ -70,10 +70,10 @@ export function TagInput({ id, value, onChange, suggestions, disabled, placehold
         onKeyDown={onKeyDown}
         disabled={disabled}
         autoComplete="off"
-        className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
+        className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm placeholder:text-muted-foreground"
       />
       {open && matches.length > 0 && (
-        <ul className="absolute z-10 mt-1 max-h-40 w-full overflow-auto rounded-md border border-neutral-200 bg-white py-1 shadow-lg">
+        <ul className="absolute z-10 mt-1 max-h-40 w-full overflow-auto rounded-lg border bg-popover py-1 shadow-float">
           {matches.map((tag, i) => (
             <li key={tag}>
               <button
@@ -82,8 +82,8 @@ export function TagInput({ id, value, onChange, suggestions, disabled, placehold
                 onClick={() => commit(tag)}
                 className={`block w-full px-3 py-1.5 text-left text-xs ${
                   i === activeIdx
-                    ? 'bg-red-50 text-red-700'
-                    : 'text-neutral-700 hover:bg-neutral-50'
+                    ? 'bg-muted text-foreground'
+                    : 'text-muted-foreground hover:bg-muted'
                 }`}
               >
                 {tag}
