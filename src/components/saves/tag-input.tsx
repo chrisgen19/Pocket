@@ -1,8 +1,8 @@
 'use client';
 
+import { filterSuggestions, splitAtCursor } from '@shared/tag-autocomplete';
 import { Tag } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
-import { filterSuggestions, splitAtCursor } from '@shared/tag-autocomplete';
 
 // Dropdown shows up to 8 matches (max-h-56).
 const SUGGESTION_LIMIT = 8;
