@@ -1,46 +1,15 @@
 'use client';
 
-import { Archive, Hash, House, Star } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useMemo } from 'react';
-import { useBookmarks } from '@/features/saves/hooks';
-import { useSavesStore } from '@/features/saves/store';
-import type { SavesCategory } from '@/features/saves/types';
+import { Hash } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { SAVES_CATEGORIES, useSavesNav } from './use-saves-nav';
 
-const categories: Array<{ key: SavesCategory; label: string; Icon: typeof House }> = [
-  { key: 'home', label: 'Home', Icon: House },
-  { key: 'favorites', label: 'Favorites', Icon: Star },
-  { key: 'archive', label: 'Archive', Icon: Archive },
-];
+type SidebarProps = {
+  tagFilter: string | null;
+};
 
-export function Sidebar() {
-  const router = useRouter();
-  const { data: bookmarks = [] } = useBookmarks();
-  const category = useSavesStore((s) => s.category);
-  const tagFilter = useSavesStore((s) => s.tagFilter);
-  const setCategory = useSavesStore((s) => s.setCategory);
-
-  function selectCategory(key: SavesCategory) {
-    // Push the URL update first so the route is already transitioning by the
-    // time setCategory clears tagFilter in the store. Avoids a brief render
-    // where the list is unfiltered but the URL still reads /saves/tags/[tag].
-    if (tagFilter) router.push('/saves');
-    setCategory(key);
-  }
-  function selectTag(tag: string) {
-    if (tagFilter === tag) {
-      router.push('/saves');
-    } else {
-      router.push(`/saves/tags/${encodeURIComponent(tag)}`);
-    }
-  }
-
-  const tags = useMemo(() => {
-    const set = new Set<string>();
-    for (const b of bookmarks) for (const t of b.tags) set.add(t);
-    return [...set].sort();
-  }, [bookmarks]);
+export function Sidebar({ tagFilter }: SidebarProps) {
+  const { category, tags, selectCategory, selectTag } = useSavesNav(tagFilter);
 
   return (
     <aside className="w-full lg:w-64 flex-shrink-0 hidden md:block">
@@ -49,13 +18,14 @@ export function Sidebar() {
           My List
         </h2>
         <nav className="space-y-1">
-          {categories.map(({ key, label, Icon }) => {
+          {SAVES_CATEGORIES.map(({ key, label, Icon }) => {
             const active = !tagFilter && category === key;
             return (
               <button
                 key={key}
                 type="button"
                 onClick={() => selectCategory(key)}
+                aria-current={active ? 'page' : undefined}
                 className={cn(
                   'group w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors',
                   active
@@ -89,6 +59,7 @@ export function Sidebar() {
                   key={tag}
                   type="button"
                   onClick={() => selectTag(tag)}
+                  aria-current={active ? 'page' : undefined}
                   className={cn(
                     'group w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors',
                     active

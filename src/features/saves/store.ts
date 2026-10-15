@@ -7,10 +7,8 @@ import type { SavesCategory, SavesView } from './types';
 type SavesUIState = {
   view: SavesView;
   category: SavesCategory;
-  tagFilter: string | null;
   setView: (v: SavesView) => void;
   setCategory: (c: SavesCategory) => void;
-  setTagFilter: (t: string | null) => void;
 };
 
 export const useSavesStore = create<SavesUIState>()(
@@ -18,10 +16,8 @@ export const useSavesStore = create<SavesUIState>()(
     (set) => ({
       view: 'grid',
       category: 'home',
-      tagFilter: null,
       setView: (v) => set({ view: v }),
-      setCategory: (c) => set({ category: c, tagFilter: null }),
-      setTagFilter: (t) => set({ tagFilter: t }),
+      setCategory: (c) => set({ category: c }),
     }),
     {
       name: 'pocket-saves-ui',
