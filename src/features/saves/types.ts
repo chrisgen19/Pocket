@@ -16,5 +16,6 @@ export type SavesView = 'grid' | 'list';
 
 export type {
   CreateBookmarkInput,
+  RestoreBookmarkInput,
   UpdateBookmarkInput,
 } from './schemas';

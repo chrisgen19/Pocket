@@ -3,7 +3,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useToastStore } from './toast-store';
 import * as api from './api';
-import type { Bookmark, CreateBookmarkInput, UpdateBookmarkInput } from './types';
+import type {
+  Bookmark,
+  CreateBookmarkInput,
+  RestoreBookmarkInput,
+  UpdateBookmarkInput,
+} from './types';
 
 const KEY = ['bookmarks'] as const;
 
@@ -65,6 +70,7 @@ export function useUpdateBookmark() {
 export function useDeleteBookmark() {
   const qc = useQueryClient();
   const showToast = useToastStore((s) => s.show);
+  const restore = useRestoreBookmark();
   return useMutation({
     mutationFn: (id: string) => api.deleteBookmark(id),
     onMutate: async (id) => {
@@ -77,6 +83,28 @@ export function useDeleteBookmark() {
       if (ctx?.previous) qc.setQueryData(KEY, ctx.previous);
       showToast(err instanceof Error ? err.message : 'Delete failed');
     },
-    onSuccess: () => showToast('Item deleted'),
+    // The delete is real; Undo re-inserts the returned row via /api/bookmarks/restore.
+    onSuccess: (deleted) =>
+      showToast('Item deleted', { label: 'Undo', onAction: () => restore.mutate(deleted) }),
+  });
+}
+
+export function useRestoreBookmark() {
+  const qc = useQueryClient();
+  const showToast = useToastStore((s) => s.show);
+  return useMutation({
+    mutationFn: (input: RestoreBookmarkInput) => api.restoreBookmark(input),
+    onSuccess: (restored) => {
+      // Back into its original slot: the list is ordered newest first by dateAdded.
+      qc.setQueryData<Bookmark[]>(KEY, (list = []) => {
+        const rest = list.filter((b) => b.id !== restored.id);
+        const at = rest.findIndex((b) => b.dateAdded < restored.dateAdded);
+        return at === -1
+          ? [...rest, restored]
+          : [...rest.slice(0, at), restored, ...rest.slice(at)];
+      });
+      showToast('Restored');
+    },
+    onError: (err) => showToast(err instanceof Error ? err.message : 'Restore failed'),
   });
 }

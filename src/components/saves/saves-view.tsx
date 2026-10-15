@@ -7,6 +7,7 @@ import { useMemo, useRef } from 'react';
 import { useBookmarks, useDeleteBookmark, useUpdateBookmark } from '@/features/saves/hooks';
 import { normalizeTag } from '@/features/saves/schemas';
 import { useSavesStore } from '@/features/saves/store';
+import type { SavesCategory } from '@/features/saves/types';
 import { isApiError } from '@/lib/api-error';
 import { cn } from '@/lib/utils';
 import { AddBookmarkForm, type AddBookmarkFormHandle } from './add-bookmark-form';
@@ -33,20 +34,20 @@ function emptyCopy(category: string, tagFilter: string | null) {
 }
 
 type SavesViewProps = {
+  category?: SavesCategory;
   initialTag?: string;
 };
 
-export function SavesView({ initialTag }: SavesViewProps = {}) {
+// The route is the source of truth for both filters: /saves, /saves/favorites and
+// /saves/archive set the category, /saves/tags/[tag] sets the tag (within Home, so
+// archived saves stay out). Read from props during render, never synced into a store.
+export function SavesView({ category = 'home', initialTag }: SavesViewProps = {}) {
   const router = useRouter();
   const formRef = useRef<AddBookmarkFormHandle>(null);
 
   const view = useSavesStore((s) => s.view);
-  const category = useSavesStore((s) => s.category);
   const setView = useSavesStore((s) => s.setView);
 
-  // The route is the source of truth: null on /saves, the param on /saves/tags/[tag].
-  // Derived during render (not synced into the store by an effect) so the first
-  // render after a client-side navigation already uses the new filter.
   const tagFilter = initialTag ?? null;
 
   function goToTag(tag: string) {
@@ -95,10 +96,10 @@ export function SavesView({ initialTag }: SavesViewProps = {}) {
       <Navbar onAddClick={() => formRef.current?.focus()} />
 
       <div className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex flex-col lg:flex-row gap-8">
-        <Sidebar tagFilter={tagFilter} />
+        <Sidebar category={category} tagFilter={tagFilter} />
 
         <main className="flex-grow">
-          <MobileNav tagFilter={tagFilter} />
+          <MobileNav category={category} tagFilter={tagFilter} />
           <AddBookmarkForm ref={formRef} tagSuggestions={tagSuggestions} />
 
           <div className="flex justify-between items-center mb-6">

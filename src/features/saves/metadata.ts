@@ -1,6 +1,7 @@
 import { fetch as undiciFetch } from 'undici';
 import { safeDispatcher } from '@/lib/safe-fetch';
 import { assertSafeUrl, UnsafeUrlError } from '@/lib/url-safety';
+import { BOOKMARK_FIELD_MAX, clampText } from './schemas';
 import { extractDomain } from './utils';
 
 export { UnsafeUrlError };
@@ -212,19 +213,34 @@ async function safeFetchHtml(target: string): Promise<{ url: string; html: strin
   return null;
 }
 
+// Scraped titles, meta descriptions and og:image URLs are otherwise unbounded (up to
+// the 256 KiB read). Clamp them to the same limits restore uses, so every stored row
+// can be restored by the undo toast. An image URL too long to be usable falls back to
+// the screenshot thumbnail rather than being truncated into a broken link.
+function clampMetadata(m: LinkMetadata): LinkMetadata {
+  return {
+    url: m.url,
+    title: clampText(m.title, BOOKMARK_FIELD_MAX.title),
+    domain: clampText(m.domain, BOOKMARK_FIELD_MAX.domain),
+    excerpt: clampText(m.excerpt, BOOKMARK_FIELD_MAX.excerpt),
+    imageUrl:
+      m.imageUrl.length > BOOKMARK_FIELD_MAX.imageUrl ? buildScreenshotUrl(m.url) : m.imageUrl,
+  };
+}
+
 export async function fetchLinkMetadata(target: string): Promise<LinkMetadata> {
   // Validate up front so the caller (route handler) can map this to a 400.
   // Redirect hops are re-validated inside safeFetchHtml.
   await assertSafeUrl(target);
 
   const domain = extractDomain(target);
-  const fallback: LinkMetadata = {
+  const fallback = clampMetadata({
     url: target,
     title: `Saved from ${domain}`,
     domain,
     excerpt: '',
     imageUrl: buildScreenshotUrl(target),
-  };
+  });
 
   try {
     const result = await safeFetchHtml(target);
@@ -249,7 +265,7 @@ export async function fetchLinkMetadata(target: string): Promise<LinkMetadata> {
       ? resolveUrl(rawImage, finalUrl)
       : (pickFirstBodyImage(html, finalUrl) ?? buildScreenshotUrl(target));
 
-    return { url: target, title, domain, excerpt, imageUrl };
+    return clampMetadata({ url: target, title, domain, excerpt, imageUrl });
   } catch (err) {
     // Re-throw unsafe-URL errors so the route handler can return a 400.
     if (err instanceof UnsafeUrlError) throw err;

@@ -2,22 +2,19 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { SavesCategory, SavesView } from './types';
+import type { SavesView } from './types';
 
+// UI preferences only. The category and tag filter live in the route.
 type SavesUIState = {
   view: SavesView;
-  category: SavesCategory;
   setView: (v: SavesView) => void;
-  setCategory: (c: SavesCategory) => void;
 };
 
 export const useSavesStore = create<SavesUIState>()(
   persist(
     (set) => ({
       view: 'grid',
-      category: 'home',
       setView: (v) => set({ view: v }),
-      setCategory: (c) => set({ category: c }),
     }),
     {
       name: 'pocket-saves-ui',
