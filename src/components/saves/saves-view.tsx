@@ -3,7 +3,7 @@
 import { LayoutGrid, List, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { useBookmarks, useDeleteBookmark, useUpdateBookmark } from '@/features/saves/hooks';
 import { useSavesStore } from '@/features/saves/store';
 import { isApiError } from '@/lib/api-error';
@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { AddBookmarkForm, type AddBookmarkFormHandle } from './add-bookmark-form';
 import { BookmarkCard } from './bookmark-card';
 import { EmptyState } from './empty-state';
+import { MobileNav } from './mobile-nav';
 import { Navbar } from './navbar';
 import { Sidebar } from './sidebar';
 
@@ -40,15 +41,12 @@ export function SavesView({ initialTag }: SavesViewProps = {}) {
 
   const view = useSavesStore((s) => s.view);
   const category = useSavesStore((s) => s.category);
-  const tagFilter = useSavesStore((s) => s.tagFilter);
   const setView = useSavesStore((s) => s.setView);
-  const setTagFilter = useSavesStore((s) => s.setTagFilter);
 
-  // URL is the source of truth: keep the store's tagFilter in sync with the
-  // route param (null on /saves, the param value on /saves/tags/[tag]).
-  useEffect(() => {
-    setTagFilter(initialTag ?? null);
-  }, [initialTag, setTagFilter]);
+  // The route is the source of truth: null on /saves, the param on /saves/tags/[tag].
+  // Derived during render (not synced into the store by an effect) so the first
+  // render after a client-side navigation already uses the new filter.
+  const tagFilter = initialTag ?? null;
 
   function goToTag(tag: string) {
     router.push(`/saves/tags/${encodeURIComponent(tag)}`);
@@ -91,9 +89,10 @@ export function SavesView({ initialTag }: SavesViewProps = {}) {
       <Navbar onAddClick={() => formRef.current?.focus()} />
 
       <div className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex flex-col lg:flex-row gap-8">
-        <Sidebar />
+        <Sidebar tagFilter={tagFilter} />
 
         <main className="flex-grow">
+          <MobileNav tagFilter={tagFilter} />
           <AddBookmarkForm ref={formRef} tagSuggestions={tagSuggestions} />
 
           <div className="flex justify-between items-center mb-6">

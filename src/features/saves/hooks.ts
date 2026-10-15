@@ -17,8 +17,15 @@ export function useCreateBookmark() {
   return useMutation({
     mutationFn: (input: CreateBookmarkInput) => api.createBookmark(input),
     onSuccess: (bookmark) => {
-      qc.setQueryData<Bookmark[]>(KEY, (prev) => (prev ? [bookmark, ...prev] : [bookmark]));
-      showToast('URL saved');
+      // Re-saving an existing URL upserts and returns the same id, so replace
+      // that entry in place (the list is ordered by createdAt, which an upsert
+      // keeps) instead of prepending a duplicate.
+      const prev = qc.getQueryData<Bookmark[]>(KEY);
+      const exists = prev?.some((b) => b.id === bookmark.id) ?? false;
+      qc.setQueryData<Bookmark[]>(KEY, (list = []) =>
+        exists ? list.map((b) => (b.id === bookmark.id ? bookmark : b)) : [bookmark, ...list],
+      );
+      showToast(exists ? 'Already saved, updated' : 'URL saved');
     },
     onError: (err) => showToast(err instanceof Error ? err.message : 'Failed to save URL'),
   });
