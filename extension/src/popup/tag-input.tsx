@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState } from 'react';
 import { filterSuggestions, splitAtCursor } from '@shared/tag-autocomplete';
+import { useMemo, useRef, useState } from 'react';
 
 // The popup is small, so its dropdown shows up to 6 matches (max-h-40).
 const SUGGESTION_LIMIT = 6;

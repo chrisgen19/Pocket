@@ -1,5 +1,5 @@
+import { type CreateBookmarkInput, createBookmarkSchema } from '@/shared/schemas';
 import { API_BASE_URL } from './config';
-import { createBookmarkSchema, type CreateBookmarkInput } from '@/shared/schemas';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`, {

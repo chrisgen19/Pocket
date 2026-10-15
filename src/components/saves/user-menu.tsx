@@ -1,8 +1,8 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { LogOut, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useQueryClient } from '@tanstack/react-query';
 import {
   DropdownMenu,
   DropdownMenuContent,
