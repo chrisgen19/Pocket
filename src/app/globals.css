@@ -50,6 +50,8 @@
   html {
     @apply font-sans;
     scrollbar-color: var(--field) transparent;
+    /* Short search results drop the scrollbar; keep its space so the layout doesn't jump. */
+    scrollbar-gutter: stable;
   }
   body {
     @apply bg-background text-foreground;

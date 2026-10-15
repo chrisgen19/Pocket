@@ -4,10 +4,16 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { SavesView } from './types';
 
-// UI preferences only. The category and tag filter live in the route.
+// UI state only. The category and tag filter live in the route.
 type SavesUIState = {
   view: SavesView;
   setView: (v: SavesView) => void;
+  /**
+   * Text in the header box: a search query or link(s) to save. Kept here (not
+   * persisted) so it survives moving between saves views and the list can filter on it.
+   */
+  draft: string;
+  setDraft: (draft: string) => void;
 };
 
 export const useSavesStore = create<SavesUIState>()(
@@ -15,6 +21,8 @@ export const useSavesStore = create<SavesUIState>()(
     (set) => ({
       view: 'list',
       setView: (v) => set({ view: v }),
+      draft: '',
+      setDraft: (draft) => set({ draft }),
     }),
     {
       name: 'pocket-saves-ui',

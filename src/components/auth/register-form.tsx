@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { resetSessionState } from '@/features/saves/session-reset';
 import { signUp } from '@/lib/auth-client';
 import { FormError } from './form-error';
 
@@ -47,6 +48,7 @@ export function RegisterForm() {
       }
       // Drop any user-scoped queries cached from a previous session in this
       // browser tab so the new account doesn't see the prior user's data.
+      resetSessionState();
       qc.clear();
       router.push('/saves');
       router.refresh();

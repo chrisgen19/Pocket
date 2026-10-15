@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { resetSessionState } from '@/features/saves/session-reset';
 import { signIn } from '@/lib/auth-client';
 import { FormError } from './form-error';
 
@@ -50,6 +51,7 @@ export function LoginForm() {
       // Drop any user-scoped queries cached from a previous session in this
       // browser tab so we don't render the previous user's data after a
       // same-browser account swap.
+      resetSessionState();
       qc.clear();
       router.push(next);
       router.refresh();
