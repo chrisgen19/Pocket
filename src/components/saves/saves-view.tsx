@@ -1,26 +1,33 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useRef } from 'react';
-import { useBookmarks, useDeleteBookmark, useUpdateBookmark } from '@/features/saves/hooks';
+import { useDeferredValue, useState } from 'react';
+import {
+  useBookmarks,
+  useDeleteBookmark,
+  useSaveLinks,
+  useUpdateBookmark,
+} from '@/features/saves/hooks';
+import { classifyInput } from '@/features/saves/omnibox';
+import { useSaveQueueStore } from '@/features/saves/save-queue-store';
 import { useSavesStore } from '@/features/saves/store';
 import type { SavesCategory } from '@/features/saves/types';
-import { AddBookmarkForm, type AddBookmarkFormHandle } from './add-bookmark-form';
 import type { BookmarkHandlers } from './bookmark-actions';
-import { emptyCopyFor } from './empty-state';
+import { emptyCopyFor, searchEmptyCopy } from './empty-state';
 import { MobileNav } from './mobile-nav';
-import { Navbar } from './navbar';
 import { SavesHeading } from './saves-heading';
 import { SavesList } from './saves-list';
 import { Sidebar } from './sidebar';
-import { useTagSuggestions } from './use-saves-nav';
-import { useVisibleBookmarks } from './use-visible-bookmarks';
+import { splitPendingSaves, useVisibleBookmarks } from './use-visible-bookmarks';
 
 const CATEGORY_TITLES: Record<SavesCategory, string> = {
   home: 'Home',
   favorites: 'Favorites',
   archive: 'Archive',
 };
+
+const sameTags = (a: string[], b: string[]) =>
+  a.length === b.length && a.every((t, i) => t === b[i]);
 
 type SavesViewProps = {
   category?: SavesCategory;
@@ -30,21 +37,38 @@ type SavesViewProps = {
 // The route is the source of truth for both filters: /saves, /saves/favorites and
 // /saves/archive set the category, /saves/tags/[tag] sets the tag (within Home, so
 // archived saves stay out). Read from props during render, never synced into a store.
+// The header box (in src/app/saves/layout.tsx) adds a search on top via the store draft.
 export function SavesView({ category = 'home', initialTag }: SavesViewProps = {}) {
   const router = useRouter();
-  const formRef = useRef<AddBookmarkFormHandle>(null);
-
   const view = useSavesStore((s) => s.view);
   const setView = useSavesStore((s) => s.setView);
+  const draft = useSavesStore((s) => s.draft);
+  const setDraft = useSavesStore((s) => s.setDraft);
+  const queueItems = useSaveQueueStore((s) => s.items);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const tagFilter = initialTag ?? null;
 
   const bookmarksQuery = useBookmarks();
   const updateMutation = useUpdateBookmark();
   const deleteMutation = useDeleteBookmark();
-  const tagSuggestions = useTagSuggestions();
-
+  const { retry, dismiss } = useSaveLinks();
   const bookmarks = bookmarksQuery.data ?? [];
-  const visible = useVisibleBookmarks(bookmarks, category, tagFilter);
+
+  // Several pasted links aren't a search; one link filters, showing it if already saved.
+  const deferredDraft = useDeferredValue(draft);
+  const intent = classifyInput(deferredDraft);
+  const query = intent.kind === 'links' ? '' : deferredDraft.trim();
+
+  const visible = useVisibleBookmarks(bookmarks, category, tagFilter, query);
+  const savedElsewhere =
+    intent.kind === 'link' ? bookmarks.find((b) => b.url === intent.url) : undefined;
+  const { pending, busyUrls } = splitPendingSaves(
+    queueItems,
+    bookmarks,
+    category,
+    tagFilter,
+    query,
+  );
 
   const handlers: BookmarkHandlers = {
     onToggleFavorite: (b) =>
@@ -53,35 +77,48 @@ export function SavesView({ category = 'home', initialTag }: SavesViewProps = {}
       updateMutation.mutate({ id: b.id, patch: { isArchived: !b.isArchived } }),
     onDelete: (b) => deleteMutation.mutate(b.id),
     onTagClick: (tag) => router.push(`/saves/tags/${encodeURIComponent(tag)}`),
+    onEditTags: (b) => setEditingId(b.id),
+    onSaveTags: (b, tags) => {
+      setEditingId(null);
+      if (!sameTags(tags, b.tags)) updateMutation.mutate({ id: b.id, patch: { tags } });
+    },
+    onCancelEditTags: () => setEditingId(null),
   };
 
+  const viewTitle = tagFilter ? `#${tagFilter}` : CATEGORY_TITLES[category];
+
   return (
-    <>
-      <Navbar onAddClick={() => formRef.current?.focus()} />
+    <div className="mx-auto flex w-full max-w-6xl flex-1 gap-10 px-4 py-6 sm:px-6 md:py-8 lg:px-8">
+      <Sidebar category={category} tagFilter={tagFilter} />
 
-      <div className="mx-auto flex w-full max-w-6xl flex-1 gap-10 px-4 py-6 sm:px-6 md:py-8 lg:px-8">
-        <Sidebar category={category} tagFilter={tagFilter} />
-
-        <main className="min-w-0 flex-1">
-          <MobileNav category={category} tagFilter={tagFilter} />
-          <AddBookmarkForm ref={formRef} tagSuggestions={tagSuggestions} />
-          <div className={view === 'list' ? 'max-w-[55rem]' : undefined}>
-            <SavesHeading
-              title={tagFilter ? `#${tagFilter}` : CATEGORY_TITLES[category]}
-              count={bookmarksQuery.data ? visible.length : null}
-              view={view}
-              onViewChange={setView}
-            />
-            <SavesList
-              query={bookmarksQuery}
-              bookmarks={visible}
-              view={view}
-              handlers={handlers}
-              empty={emptyCopyFor(category, tagFilter, bookmarks)}
-            />
-          </div>
-        </main>
-      </div>
-    </>
+      <main className="min-w-0 flex-1">
+        <MobileNav category={category} tagFilter={tagFilter} />
+        <div className={view === 'list' ? 'max-w-[55rem]' : undefined}>
+          <SavesHeading
+            title={query ? `Results for “${query}”` : viewTitle}
+            count={bookmarksQuery.data ? visible.length : null}
+            view={view}
+            onViewChange={setView}
+            onClearSearch={query ? () => setDraft('') : undefined}
+          />
+          <SavesList
+            query={bookmarksQuery}
+            bookmarks={visible}
+            view={view}
+            handlers={handlers}
+            empty={
+              query
+                ? searchEmptyCopy(query, intent, savedElsewhere, () => setDraft(''))
+                : emptyCopyFor(category, tagFilter, bookmarks)
+            }
+            pending={pending}
+            onRetry={retry}
+            onDismiss={dismiss}
+            busyUrls={busyUrls}
+            editingId={editingId}
+          />
+        </div>
+      </main>
+    </div>
   );
 }

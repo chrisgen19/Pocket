@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { resetSaveQueue } from '@/features/saves/save-queue-runner';
 import { useToastStore } from '@/features/saves/toast-store';
 import { signOut, useSession } from '@/lib/auth-client';
 
@@ -35,6 +36,9 @@ export function UserMenu() {
       showToast(err instanceof Error ? err.message : 'Sign out failed');
       return;
     }
+    // Queue first: a save finishing after qc.clear() must not write this account's row
+    // back into the cache.
+    resetSaveQueue();
     qc.clear();
     router.push('/login');
     router.refresh();

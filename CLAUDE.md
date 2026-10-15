@@ -105,14 +105,17 @@ pnpm dlx shadcn@latest add <name>     # add a shadcn component
 src/
 ├── app/
 │   ├── page.tsx            # placeholder home
-│   └── saves/page.tsx      # bookmarks dashboard
+│   ├── saves/layout.tsx    # header (save + search box), toasts, save announcer: stay mounted across saves views
+│   └── saves/page.tsx      # bookmarks dashboard (also favorites/, archive/, tags/[tag]/)
 ├── components/
 │   ├── logo.tsx            # Pocket wordmark (ribbon mark + "Pocket" in Newsreader)
-│   ├── saves/              # SavesView, Navbar, Sidebar, MobileNav, AddBookmarkForm, SavesHeading, SavesList,
-│   │                       # saves-states (skeleton/error/session), EmptyState, BookmarkRow/Tile/Cover/Meta/Actions, ToastViewport
+│   ├── saves/              # SavesView, Navbar, Omnibox (+ panel, shortcuts), TagChipsInput, Sidebar, MobileNav,
+│   │                       # SavesHeading, SavesList, PendingSaveRow, saves-states (skeleton/error/session), EmptyState,
+│   │                       # BookmarkRow/Tile/Cover/Meta/Actions/TagsEditor, SaveQueueStatus, ToastViewport
 │   └── ui/                 # shadcn primitives
 ├── features/
-│   └── saves/              # types, utils, Zustand store, toast store
+│   └── saves/              # types, utils, api, hooks, cache, omnibox (input classifier), search, save queue
+│                           # (store + runner), cover, Zustand UI store, toast store
 └── lib/
     ├── env.ts              # Zod-validated env
     ├── prisma.ts           # Prisma client singleton via PrismaPg adapter
@@ -120,6 +123,13 @@ src/
 ```
 
 When the API arrives, the Zustand store in `src/features/saves/store.ts` should become a thin client cache around TanStack Query, and `localStorage` persistence should be dropped.
+
+## Saving links
+
+- **One box** in the saves header (`src/components/saves/omnibox.tsx`): `classifyInput()` in `src/features/saves/omnibox.ts` turns its text into a search, one link, several links (pasted list, up to 50) or an inline error. Links open a panel with tags and Enter saves; words filter the current view (`src/features/saves/search.ts`). Its text lives in `useSavesStore().draft` (not persisted). Ctrl/Cmd+K and `/` focus it; pasting links outside a text field fills it.
+- **Save queue:** saves go through `enqueueSaves()` (`src/features/saves/save-queue-runner.ts`, state in `save-queue-store.ts`), never a one-off mutation: 3 at a time, new links show as pending rows, failures stay inline with Retry (network/5xx) or Dismiss. It lives outside React so it survives navigation. Call `resetSaveQueue()` before every `qc.clear()` (sign-in, sign-up, sign-out) so a late response can't write into another session's cache.
+- **Cache writes:** the save path uses `upsertSavedBookmark()` in `src/features/saves/cache.ts`; update/delete mutations roll back only their own row (a whole-list snapshot would drop rows the queue added meanwhile).
+- **Tags** are edited as chips (`TagChipsInput`) at save time and later from a save's menu (Edit tags).
 
 ## Design system ("Reading list")
 

@@ -1,11 +1,5 @@
 import { SavesView } from '@/components/saves/saves-view';
-import { ToastViewport } from '@/components/saves/toast-viewport';
 
 export default function SavesArchivePage() {
-  return (
-    <>
-      <SavesView category="archive" />
-      <ToastViewport />
-    </>
-  );
+  return <SavesView category="archive" />;
 }

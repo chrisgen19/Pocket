@@ -37,14 +37,23 @@ export async function listBookmarks(): Promise<Bookmark[]> {
   return dtos.map(toBookmark);
 }
 
-export async function createBookmark(input: CreateBookmarkInput): Promise<Bookmark> {
+/**
+ * Saves a link. The server upserts on the URL: `created` is false (200) when it was
+ * already saved and has just been refreshed, true (201) for a new save.
+ */
+export async function createBookmark(
+  input: CreateBookmarkInput,
+  signal?: AbortSignal,
+): Promise<{ bookmark: Bookmark; created: boolean }> {
   const res = await fetch('/api/bookmarks', {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
+    signal,
   });
-  return toBookmark(await handle<BookmarkDTO>(res));
+  const bookmark = toBookmark(await handle<BookmarkDTO>(res));
+  return { bookmark, created: res.status === 201 };
 }
 
 export async function updateBookmark(id: string, patch: UpdateBookmarkInput): Promise<Bookmark> {

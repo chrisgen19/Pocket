@@ -4,14 +4,17 @@ import type { Bookmark } from '@/features/saves/types';
 import { BookmarkActions, type BookmarkHandlers } from './bookmark-actions';
 import { BookmarkCover } from './bookmark-cover';
 import { BookmarkMeta } from './bookmark-meta';
+import { BookmarkTagsEditor } from './bookmark-tags-editor';
 
 type BookmarkRowProps = {
   bookmark: Bookmark;
   handlers: BookmarkHandlers;
+  busy?: boolean;
+  editing?: boolean;
 };
 
 /** One save in the list view: thumbnail, title, excerpt (md+), meta and actions. */
-export function BookmarkRow({ bookmark, handlers }: BookmarkRowProps) {
+export function BookmarkRow({ bookmark, handlers, busy, editing }: BookmarkRowProps) {
   return (
     <article className="group relative flex gap-3 px-3 py-3.5 transition-colors hover:bg-muted/40 sm:gap-4 sm:px-5 sm:py-4">
       <BookmarkCover
@@ -37,10 +40,19 @@ export function BookmarkRow({ bookmark, handlers }: BookmarkRowProps) {
           </p>
         )}
         <BookmarkMeta bookmark={bookmark} onTagClick={handlers.onTagClick} className="mt-1.5" />
+        {editing && (
+          <BookmarkTagsEditor
+            bookmark={bookmark}
+            onSave={(tags) => handlers.onSaveTags(bookmark, tags)}
+            onCancel={handlers.onCancelEditTags}
+            className="mt-3"
+          />
+        )}
       </div>
       <BookmarkActions
         bookmark={bookmark}
         handlers={handlers}
+        busy={busy}
         className="-mt-1 -mr-1.5 self-start"
       />
     </article>

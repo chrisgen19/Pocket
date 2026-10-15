@@ -1,6 +1,15 @@
 'use client';
 
-import { Archive, ArchiveRestore, Ellipsis, Link2, Star, Trash2 } from 'lucide-react';
+import {
+  Archive,
+  ArchiveRestore,
+  Ellipsis,
+  Link2,
+  Loader2,
+  Star,
+  Tags,
+  Trash2,
+} from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,11 +26,16 @@ export type BookmarkHandlers = {
   onToggleArchive: (bookmark: Bookmark) => void;
   onDelete: (bookmark: Bookmark) => void;
   onTagClick: (tag: string) => void;
+  onEditTags: (bookmark: Bookmark) => void;
+  onSaveTags: (bookmark: Bookmark, tags: string[]) => void;
+  onCancelEditTags: () => void;
 };
 
 type BookmarkActionsProps = {
   bookmark: Bookmark;
   handlers: BookmarkHandlers;
+  /** Being saved again from the header box: tags can't be edited until it finishes. */
+  busy?: boolean;
   className?: string;
 };
 
@@ -29,8 +43,8 @@ type BookmarkActionsProps = {
 const ICON_BUTTON =
   'inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:size-8';
 
-/** Favorite and archive toggles plus a menu with the rest (copy link, delete). */
-export function BookmarkActions({ bookmark, handlers, className }: BookmarkActionsProps) {
+/** Favorite and archive toggles plus a menu with the rest (edit tags, copy link, delete). */
+export function BookmarkActions({ bookmark, handlers, busy, className }: BookmarkActionsProps) {
   const showToast = useToastStore((s) => s.show);
   const archiveLabel = bookmark.isArchived ? 'Unarchive' : 'Archive';
   const ArchiveIcon = bookmark.isArchived ? ArchiveRestore : Archive;
@@ -46,6 +60,15 @@ export function BookmarkActions({ bookmark, handlers, className }: BookmarkActio
 
   return (
     <div className={cn('relative z-10 flex shrink-0 items-center', className)}>
+      {busy && (
+        <span role="status" className="inline-flex size-9 items-center justify-center sm:size-8">
+          <Loader2
+            aria-hidden="true"
+            className="size-4 text-muted-foreground motion-safe:animate-spin"
+          />
+          <span className="sr-only">Refreshing</span>
+        </span>
+      )}
       <button
         type="button"
         aria-pressed={bookmark.isFavorite}
@@ -72,6 +95,13 @@ export function BookmarkActions({ bookmark, handlers, className }: BookmarkActio
         <DropdownMenuContent align="end" className="w-44">
           <DropdownMenuItem className="py-1.5" onClick={() => handlers.onToggleArchive(bookmark)}>
             <ArchiveIcon /> {archiveLabel}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="py-1.5"
+            disabled={busy}
+            onClick={() => handlers.onEditTags(bookmark)}
+          >
+            <Tags /> Edit tags
           </DropdownMenuItem>
           <DropdownMenuItem className="py-1.5" onClick={copyLink}>
             <Link2 /> Copy link
