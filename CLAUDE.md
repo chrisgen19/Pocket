@@ -127,7 +127,8 @@ When the API arrives, the Zustand store in `src/features/saves/store.ts` should 
   - `src/proxy.ts`: credentialed CORS on `/api/*` only for `chrome-extension://<id>` origins in the list. Validates with `safeParse` and only this one schema, so an invalid value fails closed (no CORS) instead of 500ing every route. Do not import `src/lib/env.ts` here: it would make `/api/health` depend on the full env.
   - `src/lib/auth.ts`: the same origins added to Better Auth `trustedOrigins`, via `env.EXTENSION_IDS: string[]` (strict: an invalid value throws)
 - A new or changed extension ID (unpacked dev build vs Web Store build) must be added to `EXTENSION_IDS`, or the popup's API calls fail CORS/origin checks.
-- `extension/src/shared/schemas.ts` mirrors `src/features/saves/schemas.ts`: keep them in sync when request payloads change.
+- Logic used by both the web app and the extension lives in `shared/` at the repo root (tag normalization in `shared/tags.ts`, tag autocomplete in `shared/tag-autocomplete.ts`), imported as `@shared/*` (alias in both tsconfigs and `extension/vite.config.ts`). Keep those files free of imports: each build bundles them with its own `node_modules`.
+- `extension/src/shared/schemas.ts` mirrors the create schema in `src/features/saves/schemas.ts` (URL rule, limits); keep them in sync when request payloads change.
 
 ## API keys (Apple Shortcuts)
 

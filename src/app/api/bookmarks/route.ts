@@ -1,6 +1,7 @@
+import { normalizeTags } from '@shared/tags';
 import { NextResponse } from 'next/server';
 import { fetchLinkMetadata } from '@/features/saves/metadata';
-import { createBookmarkSchema, normalizeTags } from '@/features/saves/schemas';
+import { createBookmarkSchema } from '@/features/saves/schemas';
 import { prisma } from '@/lib/prisma';
 import { authenticateRequest } from '@/lib/session';
 import { UnsafeUrlError } from '@/lib/url-safety';
