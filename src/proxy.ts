@@ -1,14 +1,17 @@
 import { getSessionCookie } from 'better-auth/cookies';
 import { type NextRequest, NextResponse } from 'next/server';
+import { extensionIdsSchema } from '@/lib/extension-ids';
 
 const PROTECTED_PREFIXES = ['/saves'];
 
+// Validate only EXTENSION_IDS here, never the full env schema: a throw at module
+// load would 500 every route, including the /api/health liveness probe. An
+// invalid value fails closed (no extension gets CORS); src/lib/env.ts still
+// rejects it loudly for the auth routes.
+const extensionIds = extensionIdsSchema.safeParse(process.env.EXTENSION_IDS);
+
 const ALLOWED_EXTENSION_ORIGINS = new Set(
-  (process.env.EXTENSION_IDS ?? '')
-    .split(',')
-    .map((id) => id.trim())
-    .filter(Boolean)
-    .map((id) => `chrome-extension://${id}`),
+  extensionIds.success ? extensionIds.data.map((id) => `chrome-extension://${id}`) : [],
 );
 
 export function proxy(request: NextRequest) {
