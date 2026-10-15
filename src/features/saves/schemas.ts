@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { normalizeUrl } from './utils';
 
 const MAX_TAGS = 20;
 const MAX_TAG_LENGTH = 40;
@@ -42,7 +43,12 @@ const httpUrlSchema = z
   .refine((u) => /^https?:\/\//i.test(u), 'URL must start with http:// or https://');
 
 export const createBookmarkSchema = z.object({
-  url: z.string().url().max(BOOKMARK_FIELD_MAX.url),
+  // Normalize before validating, so a bare domain like "example.com" is accepted (as
+  // https://example.com) and only http(s) URLs are ever stored.
+  url: z.preprocess(
+    (value) => (typeof value === 'string' ? normalizeUrl(value) : value),
+    httpUrlSchema,
+  ),
   tags: tagsSchema.default([]),
 });
 

@@ -8,8 +8,13 @@ const normalizeTags = (tags: string[]): string[] => [
 ];
 
 export const createBookmarkSchema = z.object({
-  // Same limit as the server (BOOKMARK_FIELD_MAX.url).
-  url: z.string().url().max(8192),
+  // Same limit and http(s)-only rule as the server (BOOKMARK_FIELD_MAX.url). The popup
+  // always sends the full tab URL, so no bare-domain normalization is needed here.
+  url: z
+    .string()
+    .url()
+    .max(8192)
+    .refine((u) => /^https?:\/\//i.test(u), 'URL must start with http:// or https://'),
   tags: z
     .array(z.string())
     .transform(normalizeTags)

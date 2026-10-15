@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { fetchLinkMetadata } from '@/features/saves/metadata';
-import { BOOKMARK_FIELD_MAX, createBookmarkSchema, normalizeTags } from '@/features/saves/schemas';
-import { normalizeUrl } from '@/features/saves/utils';
+import { createBookmarkSchema, normalizeTags } from '@/features/saves/schemas';
 import { prisma } from '@/lib/prisma';
 import { authenticateRequest } from '@/lib/session';
 import { UnsafeUrlError } from '@/lib/url-safety';
@@ -29,12 +28,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const url = normalizeUrl(parsed.data.url);
-  // normalizeUrl can prepend "https://", so re-check the stored length: restore
-  // enforces the same limit, and a saved row must always be restorable.
-  if (url.length > BOOKMARK_FIELD_MAX.url) {
-    return NextResponse.json({ error: 'URL is too long' }, { status: 400 });
-  }
+  // Already normalized (https:// added to bare domains), http(s)-only and within the
+  // length limit restore enforces, by createBookmarkSchema.
+  const { url } = parsed.data;
 
   let metadata: Awaited<ReturnType<typeof fetchLinkMetadata>>;
   try {
