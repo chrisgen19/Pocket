@@ -1,6 +1,7 @@
 'use client';
 
 import { Archive, Star, Trash2 } from 'lucide-react';
+import Image from 'next/image';
 import { useState } from 'react';
 import type { Bookmark } from '@/features/saves/types';
 import { timeAgo } from '@/features/saves/utils';
@@ -125,10 +126,16 @@ export function BookmarkCard({
         view === 'grid' ? 'aspect-video' : 'w-full sm:w-64 h-48 sm:h-auto',
       )}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      {/* unoptimized: covers come from any site a user saves, so the browser loads them
+          directly. Optimizing would make this server fetch and resize arbitrary third-party
+          images and need a wildcard images.remotePatterns. width/height only reserve the
+          aspect ratio; the classes size it. */}
+      <Image
         src={imgSrc}
         alt={`Cover for ${bookmark.title}`}
+        width={600}
+        height={400}
+        unoptimized
         onError={() => setImgSrc(FALLBACK_IMAGE)}
         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
       />
