@@ -1,7 +1,3 @@
-export function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2);
-}
-
 export function extractDomain(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, '');
@@ -10,18 +6,22 @@ export function extractDomain(url: string): string {
   }
 }
 
+const RELATIVE_TIME = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+
+/** "just now", "5 minutes ago", "yesterday", "3 weeks ago"... */
 export function timeAgo(timestamp: number): string {
   const seconds = Math.floor((Date.now() - timestamp) / 1000);
-  const units: Array<[number, string]> = [
-    [31_536_000, 'y'],
-    [2_592_000, 'mo'],
-    [86_400, 'd'],
-    [3_600, 'h'],
-    [60, 'm'],
+  const units: Array<[number, Intl.RelativeTimeFormatUnit]> = [
+    [31_536_000, 'year'],
+    [2_592_000, 'month'],
+    [604_800, 'week'],
+    [86_400, 'day'],
+    [3_600, 'hour'],
+    [60, 'minute'],
   ];
-  for (const [s, label] of units) {
+  for (const [s, unit] of units) {
     const v = Math.floor(seconds / s);
-    if (v >= 1) return `${v}${label} ago`;
+    if (v >= 1) return RELATIVE_TIME.format(-v, unit);
   }
   return 'just now';
 }
@@ -52,16 +52,4 @@ export function parseTags(raw: string): string[] {
     .split(',')
     .map((t) => t.trim())
     .filter((t) => t.length > 0);
-}
-
-export function placeholderImage(url: string, domain: string): string {
-  const hash =
-    Math.abs(
-      url.split('').reduce((a, b) => {
-        const x = (a << 5) - a + b.charCodeAt(0);
-        return x & x;
-      }, 0),
-    ) % 360;
-  const initial = domain.charAt(0).toUpperCase() || '?';
-  return `https://placehold.co/600x400/hsl(${hash},20%,90%)/hsl(${hash},50%,30%)?text=${initial}`;
 }

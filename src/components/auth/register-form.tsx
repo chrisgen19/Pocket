@@ -4,9 +4,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { signUp } from '@/lib/auth-client';
+import { FormError } from './form-error';
 
 export function RegisterForm() {
   const router = useRouter();
@@ -57,7 +59,7 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="firstName">First name</Label>
           <Input
@@ -68,6 +70,7 @@ export function RegisterForm() {
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
             disabled={submitting}
+            className="h-10"
           />
         </div>
         <div className="space-y-1.5">
@@ -80,6 +83,7 @@ export function RegisterForm() {
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
             disabled={submitting}
+            className="h-10"
           />
         </div>
       </div>
@@ -93,6 +97,7 @@ export function RegisterForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={submitting}
+          className="h-10"
         />
       </div>
       <div className="space-y-1.5">
@@ -106,24 +111,17 @@ export function RegisterForm() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           disabled={submitting}
+          className="h-10"
         />
-        <p className="text-xs text-gray-500">At least 8 characters.</p>
+        <p className="text-xs text-muted-foreground">At least 8 characters.</p>
       </div>
 
-      {error && (
-        <p className="text-sm text-red-600" role="alert">
-          {error}
-        </p>
-      )}
+      {error && <FormError>{error}</FormError>}
 
-      <button
-        type="submit"
-        disabled={submitting}
-        className="w-full bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white py-2.5 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 flex items-center justify-center gap-2"
-      >
-        {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+      <Button type="submit" disabled={submitting} className="h-10 w-full hover:bg-primary/90">
+        {submitting && <Loader2 className="animate-spin" />}
         {submitting ? 'Creating account…' : 'Create account'}
-      </button>
+      </Button>
     </form>
   );
 }

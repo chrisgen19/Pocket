@@ -13,8 +13,9 @@ type MobileNavProps = {
 
 const CHIP =
   'flex flex-shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors';
-const CHIP_ACTIVE = 'border-gray-900 bg-gray-900 text-white';
-const CHIP_IDLE = 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900';
+const CHIP_ACTIVE = 'border-foreground bg-foreground text-background';
+const CHIP_IDLE = 'bg-card text-muted-foreground hover:text-foreground';
+const COUNT = 'text-xs tabular-nums opacity-70';
 
 // Ref callback for the active chip: React calls it whenever a different chip becomes
 // active (including once tags load), so a tag far down the row is scrolled into view.
@@ -39,7 +40,7 @@ const centerInRow = (chip: HTMLElement | null) => {
 // Horizontal, scrollable stand-in for the sidebar below the md breakpoint, where
 // the sidebar is hidden.
 export function MobileNav({ category, tagFilter }: MobileNavProps) {
-  const { tags, tagHref } = useSavesNav(tagFilter);
+  const { tags, countFor, tagCountFor, tagHref } = useSavesNav(tagFilter);
 
   return (
     <nav
@@ -59,11 +60,12 @@ export function MobileNav({ category, tagFilter }: MobileNavProps) {
             >
               <Icon className="h-4 w-4" />
               {label}
+              <Count value={countFor(key)} />
             </Link>
           );
         })}
 
-        {tags.length > 0 && <span aria-hidden="true" className="mx-1 h-6 w-px bg-gray-200" />}
+        {tags.length > 0 && <span aria-hidden="true" className="mx-1 h-6 w-px bg-border" />}
 
         {tags.map((tag) => {
           const active = tagFilter === tag;
@@ -77,10 +79,15 @@ export function MobileNav({ category, tagFilter }: MobileNavProps) {
             >
               <Hash className="h-3.5 w-3.5" />
               {tag}
+              <Count value={tagCountFor(tag)} />
             </Link>
           );
         })}
       </div>
     </nav>
   );
+}
+
+function Count({ value }: { value: number | null }) {
+  return value === null ? null : <span className={COUNT}>{value}</span>;
 }

@@ -15,7 +15,10 @@ export default function LoginPage() {
       footer={
         <>
           Don&apos;t have an account?{' '}
-          <Link href="/register" className="text-red-600 hover:text-red-700 font-medium">
+          <Link
+            href="/register"
+            className="rounded-sm font-medium text-foreground underline underline-offset-2 hover:text-primary"
+          >
             Create one
           </Link>
         </>

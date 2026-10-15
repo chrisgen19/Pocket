@@ -107,7 +107,9 @@ src/
 │   ├── page.tsx            # placeholder home
 │   └── saves/page.tsx      # bookmarks dashboard
 ├── components/
-│   ├── saves/              # Navbar, Sidebar, AddBookmarkForm, BookmarkCard, EmptyState, SavesView, ToastViewport
+│   ├── logo.tsx            # Pocket wordmark (ribbon mark + "Pocket" in Newsreader)
+│   ├── saves/              # SavesView, Navbar, Sidebar, MobileNav, AddBookmarkForm, SavesHeading, SavesList,
+│   │                       # saves-states (skeleton/error/session), EmptyState, BookmarkRow/Tile/Cover/Meta/Actions, ToastViewport
 │   └── ui/                 # shadcn primitives
 ├── features/
 │   └── saves/              # types, utils, Zustand store, toast store
@@ -118,6 +120,14 @@ src/
 ```
 
 When the API arrives, the Zustand store in `src/features/saves/store.ts` should become a thin client cache around TanStack Query, and `localStorage` persistence should be dropped.
+
+## Design system ("Reading list")
+
+- **Tokens:** `shared/tokens.css` holds the raw palette (paper, sheet, ink, graphite, pocket red, rule, wash, field, danger, notice) mapped onto the shadcn semantic names, with dark values under `prefers-color-scheme: dark`. `src/app/globals.css` imports it and exposes the Tailwind colors. Components use only semantic classes (`bg-background`, `bg-card`, `text-foreground`, `text-muted-foreground`, `bg-primary`, `border`, `text-destructive`, `bg-notice`); no hardcoded `gray-*`/`red-*`/hex.
+- **Dark mode** follows the system setting; the `dark:` variant is media-query based (no `.dark` class, no toggle).
+- **Type:** Hanken Grotesk (`font-sans`, all UI) and Newsreader (`font-serif`, saved titles and page titles), both via `next/font/google` in `src/app/layout.tsx`.
+- **Rules:** pocket red only for the brand mark, the primary action and favorites; no resting shadows (`shadow-float` only on floating layers); radius by hierarchy (`rounded-xl` panels, `rounded-lg` controls); sentence-case labels; one global `:focus-visible` outline in `globals.css`.
+- **Covers:** saves without a usable image get a typographic cover (domain on a tint from `coverHue()` in `src/features/saves/cover.ts`); no third-party placeholder service.
 
 ## Extension
 
@@ -130,7 +140,7 @@ When the API arrives, the Zustand store in `src/features/saves/store.ts` should 
   - `src/proxy.ts`: credentialed CORS on `/api/*` only for `chrome-extension://<id>` origins in the list. Validates with `safeParse` and only this one schema, so an invalid value fails closed (no CORS) instead of 500ing every route. Do not import `src/lib/env.ts` here: it would make `/api/health` depend on the full env.
   - `src/lib/auth.ts`: the same origins added to Better Auth `trustedOrigins`, via `env.EXTENSION_IDS: string[]` (strict: an invalid value throws)
 - A new or changed extension ID (unpacked dev build vs Web Store build) must be added to `EXTENSION_IDS`, or the popup's API calls fail CORS/origin checks.
-- Logic used by both the web app and the extension lives in `shared/` at the repo root (tag normalization in `shared/tags.ts`, tag autocomplete in `shared/tag-autocomplete.ts`), imported as `@shared/*` (alias in both tsconfigs and `extension/vite.config.ts`). Keep those files free of imports: each build bundles them with its own `node_modules`.
+- Logic used by both the web app and the extension lives in `shared/` at the repo root (tag normalization in `shared/tags.ts`, tag autocomplete in `shared/tag-autocomplete.ts`, design tokens in `shared/tokens.css`), imported as `@shared/*` (alias in both tsconfigs and `extension/vite.config.ts`) or by relative CSS `@import`. Keep those files free of imports: each build bundles them with its own `node_modules`.
 - `extension/src/shared/schemas.ts` mirrors the create schema in `src/features/saves/schemas.ts` (URL rule, limits); keep them in sync when request payloads change.
 
 ## API keys (Apple Shortcuts)
@@ -179,4 +189,4 @@ Personal API keys let clients that can't carry the session cookie (the iPhone "S
 - [ ] **Non-goals:**
 - [ ] **Deployment target:** Vercel? Coolify? Both?
 - [ ] **Third-party services:** transactional email provider for verification + password reset?
-- [ ] **Design system:** keep red accent / Inter, or adopt full shadcn theme tokens?
+- [x] **Design system:** "Reading list" tokens and type (see Design system)

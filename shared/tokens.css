@@ -1,0 +1,82 @@
+/*
+ * Pocket design tokens, shared by the web app (src/app/globals.css) and the Chrome
+ * extension popup (extension/src/popup/popup.css). Plain CSS variables only: no
+ * imports and no Tailwind directives, since two separate builds read this file.
+ *
+ * The raw palette (--paper, --ink, ...) is mapped onto the shadcn semantic names
+ * (--background, --foreground, ...). Components use only the semantic names, so dark
+ * mode is just the second block of values.
+ */
+
+:root {
+  color-scheme: light;
+
+  --paper: #f3f4f1;
+  --sheet: #ffffff;
+  --ink: #1c2333;
+  --graphite: #5e6675;
+  --pocket: #d7263d;
+  --pocket-ink: #ffffff;
+  --rule: #dcdfe3;
+  --wash: #e8eae5;
+  --field: #c4c8ce;
+  --danger: #b42318;
+  --notice-paper: #fff4d6;
+  --notice-ink: #6b4300;
+
+  /* Typographic covers (missing images): hue comes from the domain, these set tone. */
+  --cover-bg-l: 89%;
+  --cover-fg-l: 30%;
+  --cover-sat: 32%;
+
+  --float-shadow: 0 12px 32px -12px rgb(28 35 51 / 0.22), 0 2px 6px -2px rgb(28 35 51 / 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --paper: #12161e;
+    --sheet: #1a1f29;
+    --ink: #e6e8ec;
+    --graphite: #a0a7b4;
+    --pocket: #f2495c;
+    --pocket-ink: #12161e;
+    --rule: #2a303c;
+    --wash: #232935;
+    --field: #3a4150;
+    --danger: #ff6b5e;
+    --notice-paper: #3a2e12;
+    --notice-ink: #f5d58a;
+
+    --cover-bg-l: 22%;
+    --cover-fg-l: 80%;
+    --cover-sat: 24%;
+
+    --float-shadow: 0 12px 32px -12px rgb(0 0 0 / 0.6), 0 2px 6px -2px rgb(0 0 0 / 0.4);
+  }
+}
+
+:root {
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: var(--sheet);
+  --card-foreground: var(--ink);
+  --popover: var(--sheet);
+  --popover-foreground: var(--ink);
+  --primary: var(--pocket);
+  --primary-foreground: var(--pocket-ink);
+  --secondary: var(--wash);
+  --secondary-foreground: var(--ink);
+  --muted: var(--wash);
+  --muted-foreground: var(--graphite);
+  --accent: var(--wash);
+  --accent-foreground: var(--ink);
+  --destructive: var(--danger);
+  --border: var(--rule);
+  --input: var(--field);
+  --ring: var(--ink);
+  --notice: var(--notice-paper);
+  --notice-foreground: var(--notice-ink);
+  --radius: 0.625rem;
+}

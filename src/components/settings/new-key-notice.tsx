@@ -26,8 +26,8 @@ export function NewKeyNotice({ apiKey, shortcutUrl, onDismiss }: NewKeyNoticePro
   }
 
   return (
-    <div className="space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
-      <p className="text-sm font-medium text-amber-900">
+    <div className="space-y-3 rounded-lg bg-notice p-4 text-notice-foreground">
+      <p className="text-sm font-medium">
         Copy your new key now. For security it won't be shown again.
       </p>
       <div className="flex flex-col gap-2 sm:flex-row">
@@ -36,14 +36,14 @@ export function NewKeyNotice({ apiKey, shortcutUrl, onDismiss }: NewKeyNoticePro
           value={apiKey}
           onFocus={(e) => e.currentTarget.select()}
           aria-label="New API key"
-          className="min-w-0 flex-grow rounded-md border border-amber-300 bg-white px-3 py-2 font-mono text-xs text-gray-900"
+          className="h-10 min-w-0 flex-grow rounded-lg border border-notice-foreground/30 bg-card px-3 font-mono text-xs text-foreground"
         />
         <button
           type="button"
           onClick={copy}
-          className="flex items-center justify-center gap-2 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700"
+          className="flex h-10 items-center justify-center gap-2 rounded-lg bg-foreground px-4 text-sm font-medium text-background hover:bg-foreground/85"
         >
-          {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
           {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
@@ -51,7 +51,7 @@ export function NewKeyNotice({ apiKey, shortcutUrl, onDismiss }: NewKeyNoticePro
         <button
           type="button"
           onClick={onDismiss}
-          className="text-sm text-amber-900 underline underline-offset-2 hover:text-amber-700"
+          className="rounded-sm text-sm underline underline-offset-2 hover:opacity-80"
         >
           I've saved it
         </button>
@@ -60,7 +60,7 @@ export function NewKeyNotice({ apiKey, shortcutUrl, onDismiss }: NewKeyNoticePro
             href={shortcutUrl}
             target="_blank"
             rel="noreferrer"
-            className="text-sm font-medium text-amber-900 underline underline-offset-2 hover:text-amber-700"
+            className="rounded-sm text-sm font-medium underline underline-offset-2 hover:opacity-80"
           >
             Add the shortcut to your iPhone
           </a>

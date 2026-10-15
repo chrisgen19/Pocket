@@ -1,6 +1,6 @@
 'use client';
 
-import { Hash } from 'lucide-react';
+import { Hash, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import type { SavesCategory } from '@/features/saves/types';
 import { cn } from '@/lib/utils';
@@ -12,75 +12,82 @@ type SidebarProps = {
 };
 
 export function Sidebar({ category, tagFilter }: SidebarProps) {
-  const { tags, tagHref } = useSavesNav(tagFilter);
+  const { tags, countFor, tagCountFor, tagHref, loaded } = useSavesNav(tagFilter);
 
   return (
-    <aside className="w-full lg:w-64 flex-shrink-0 hidden md:block">
-      <div className="sticky top-24">
-        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-          My List
-        </h2>
-        <nav className="space-y-1">
-          {SAVES_CATEGORIES.map(({ key, label, href, Icon }) => {
-            const active = !tagFilter && category === key;
-            return (
-              <Link
-                key={key}
-                href={href}
-                aria-current={active ? 'page' : undefined}
-                className={cn(
-                  'group w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors',
-                  active
-                    ? 'bg-gray-100 text-gray-900'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
-                )}
-              >
-                <Icon
-                  className={cn(
-                    'mr-3 w-4 h-4',
-                    active ? 'text-gray-500' : 'text-gray-400 group-hover:text-gray-500',
-                  )}
-                />
-                {label}
-              </Link>
-            );
-          })}
+    <aside className="hidden w-48 shrink-0 md:block lg:w-56">
+      <div className="sticky top-24 max-h-[calc(100dvh-7rem)] space-y-8 overflow-y-auto pb-4">
+        <nav aria-label="Saves" className="space-y-0.5">
+          {SAVES_CATEGORIES.map(({ key, label, href, Icon }) => (
+            <NavItem
+              key={key}
+              href={href}
+              label={label}
+              Icon={Icon}
+              count={countFor(key)}
+              active={!tagFilter && category === key}
+            />
+          ))}
         </nav>
 
-        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mt-8 mb-3">
-          Tags
-        </h2>
-        <nav className="space-y-1">
+        <nav aria-labelledby="sidebar-tags-heading">
+          <h2
+            id="sidebar-tags-heading"
+            className="mb-1.5 px-3 text-[0.8125rem] font-semibold text-muted-foreground"
+          >
+            Tags
+          </h2>
           {tags.length === 0 ? (
-            <p className="text-sm text-gray-400 px-3 py-2 italic">No tags yet</p>
+            <p className="px-3 py-1.5 text-sm text-muted-foreground">
+              {loaded ? 'Tags you add show up here.' : ' '}
+            </p>
           ) : (
-            tags.map((tag) => {
-              const active = tagFilter === tag;
-              return (
-                <Link
+            <div className="space-y-0.5">
+              {tags.map((tag) => (
+                <NavItem
                   key={tag}
                   href={tagHref(tag)}
-                  aria-current={active ? 'page' : undefined}
-                  className={cn(
-                    'group w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors',
-                    active
-                      ? 'bg-gray-100 text-gray-900'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
-                  )}
-                >
-                  <Hash
-                    className={cn(
-                      'mr-3 w-4 h-4',
-                      active ? 'text-gray-500' : 'text-gray-400 group-hover:text-gray-500',
-                    )}
-                  />
-                  <span className="truncate">{tag}</span>
-                </Link>
-              );
-            })
+                  label={tag}
+                  Icon={Hash}
+                  count={tagCountFor(tag)}
+                  active={tagFilter === tag}
+                />
+              ))}
+            </div>
           )}
         </nav>
       </div>
     </aside>
+  );
+}
+
+type NavItemProps = {
+  href: string;
+  label: string;
+  Icon: LucideIcon;
+  count: number | null;
+  active: boolean;
+};
+
+function NavItem({ href, label, Icon, count, active }: NavItemProps) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? 'page' : undefined}
+      className={cn(
+        'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+        active
+          ? 'bg-card font-semibold text-foreground ring-1 ring-border'
+          : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+      )}
+    >
+      <Icon className={cn('size-4 shrink-0', active && 'text-primary')} />
+      <span className="truncate">{label}</span>
+      {count !== null && (
+        <span className="ml-auto text-xs font-medium text-muted-foreground tabular-nums">
+          {count}
+        </span>
+      )}
+    </Link>
   );
 }

@@ -17,7 +17,7 @@ export function ToastViewport() {
       {toasts.map((t) => (
         <div
           key={t.id}
-          className="pointer-events-auto flex items-center gap-4 rounded-lg bg-gray-700 px-5 py-3 text-white shadow-md animate-in fade-in slide-in-from-bottom-2 sm:max-w-sm sm:px-6"
+          className="pointer-events-auto flex items-center gap-4 rounded-lg bg-foreground px-4 py-3 text-sm text-background shadow-float motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 sm:max-w-sm sm:px-5"
         >
           <span className="min-w-0 flex-1 break-words">{t.message}</span>
           {t.action && (
@@ -27,7 +27,7 @@ export function ToastViewport() {
                 dismiss(t.id);
                 t.action?.onAction();
               }}
-              className="-my-1 shrink-0 rounded px-2 py-1 text-sm font-semibold text-red-300 hover:bg-white/10 hover:text-red-200 focus:outline-none focus:ring-2 focus:ring-red-300"
+              className="-my-1 shrink-0 rounded px-2 py-1 font-semibold underline underline-offset-2 hover:bg-background/10 focus-visible:outline-background"
             >
               {t.action.label}
             </button>

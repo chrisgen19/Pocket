@@ -58,11 +58,11 @@ export const AddBookmarkForm = forwardRef<AddBookmarkFormHandle, AddBookmarkForm
     const submitting = createMutation.isPending;
 
     return (
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-8">
+      <div className="mb-6 rounded-xl border bg-card p-3">
         <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
           <div className="flex-grow relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <LinkIcon className="w-4 h-4 text-gray-400" />
+              <LinkIcon className="size-4 text-muted-foreground" />
             </div>
             <input
               ref={urlRef}
@@ -80,7 +80,7 @@ export const AddBookmarkForm = forwardRef<AddBookmarkFormHandle, AddBookmarkForm
               onChange={(e) => setUrl(e.target.value)}
               disabled={submitting}
               autoComplete="off"
-              className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 sm:text-sm disabled:opacity-60"
+              className="block h-11 w-full rounded-lg border border-input bg-background pr-3 pl-10 text-base placeholder:text-muted-foreground disabled:opacity-60 sm:text-sm"
             />
           </div>
           <div className="flex-grow sm:max-w-xs">
@@ -94,7 +94,7 @@ export const AddBookmarkForm = forwardRef<AddBookmarkFormHandle, AddBookmarkForm
           <button
             type="submit"
             disabled={submitting}
-            className="bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white px-6 py-3 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 shadow-sm flex items-center justify-center gap-2"
+            className="flex h-11 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
           >
             {submitting ? (
               <>

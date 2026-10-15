@@ -4,9 +4,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { signIn } from '@/lib/auth-client';
+import { FormError } from './form-error';
 
 // Reject anything that isn't an app-relative path: bare paths only, no
 // protocol schemes (javascript:, data:), no protocol-relative URLs (//host),
@@ -70,6 +72,7 @@ export function LoginForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={submitting}
+          className="h-10"
         />
       </div>
       <div className="space-y-1.5">
@@ -82,23 +85,16 @@ export function LoginForm() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           disabled={submitting}
+          className="h-10"
         />
       </div>
 
-      {error && (
-        <p className="text-sm text-red-600" role="alert">
-          {error}
-        </p>
-      )}
+      {error && <FormError>{error}</FormError>}
 
-      <button
-        type="submit"
-        disabled={submitting}
-        className="w-full bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white py-2.5 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 flex items-center justify-center gap-2"
-      >
-        {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+      <Button type="submit" disabled={submitting} className="h-10 w-full hover:bg-primary/90">
+        {submitting && <Loader2 className="animate-spin" />}
         {submitting ? 'Signing in…' : 'Sign in'}
-      </button>
+      </Button>
     </form>
   );
 }

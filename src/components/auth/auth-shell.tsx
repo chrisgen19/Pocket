@@ -1,5 +1,5 @@
-import { Bookmark } from 'lucide-react';
 import Link from 'next/link';
+import { Logo } from '@/components/logo';
 
 type AuthShellProps = {
   title: string;
@@ -10,22 +10,21 @@ type AuthShellProps = {
 
 export function AuthShell({ title, subtitle, footer, children }: AuthShellProps) {
   return (
-    <main className="flex-grow flex items-center justify-center px-4 py-16">
-      <div className="w-full max-w-md">
-        <Link href="/" className="flex items-center justify-center gap-2 mb-8">
-          <div className="w-9 h-9 bg-red-500 rounded text-white flex items-center justify-center">
-            <Bookmark className="w-5 h-5" fill="currentColor" />
-          </div>
-          <span className="font-bold text-2xl tracking-tight text-gray-900">Pocket</span>
+    <main className="flex flex-1 flex-col items-center justify-center px-4 py-12 sm:py-16">
+      <div className="w-full max-w-sm">
+        <Link href="/" aria-label="Pocket home" className="mb-8 inline-flex rounded-md">
+          <Logo />
         </Link>
 
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-8">
-          <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-          <p className="mt-1 text-sm text-gray-500">{subtitle}</p>
+        <div className="rounded-xl border bg-card p-6 sm:p-8">
+          <h1 className="font-serif text-[1.75rem] leading-tight font-semibold tracking-[-0.005em]">
+            {title}
+          </h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">{subtitle}</p>
           <div className="mt-6">{children}</div>
         </div>
 
-        <p className="mt-6 text-center text-sm text-gray-500">{footer}</p>
+        <p className="mt-6 text-sm text-muted-foreground">{footer}</p>
       </div>
     </main>
   );
