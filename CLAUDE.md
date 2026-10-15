@@ -9,7 +9,7 @@
 - **Component primitives:** Base UI (`@base-ui/react`) — shadcn's `base` preset
 - **Icons:** `lucide-react`
 - **Utilities:** `clsx`, `tailwind-merge` (via `cn()` in `src/lib/utils.ts`), `class-variance-authority`
-- **Lint:** ESLint (flat config, `eslint.config.mjs`)
+- **Lint/format:** Biome (`biome.json`). `pnpm lint` runs `biome check .` (lint, formatting and import order); `pnpm check` applies the safe fixes
 - **Package manager:** `pnpm` (required — do not use npm/yarn)
 - **Runtime:** Node 20+
 
@@ -86,7 +86,8 @@ pocket/
 pnpm dev                              # start dev server
 pnpm build                            # production build
 pnpm start                            # serve production build
-pnpm lint                             # eslint
+pnpm lint                             # biome check: lint + format + import order (read-only)
+pnpm check                            # same checks, applying safe fixes (--write)
 pnpm dlx shadcn@latest add <name>     # add a shadcn component
 ```
 
