@@ -1,10 +1,13 @@
 'use client';
 
 import { Hash } from 'lucide-react';
+import Link from 'next/link';
+import type { SavesCategory } from '@/features/saves/types';
 import { cn } from '@/lib/utils';
 import { SAVES_CATEGORIES, useSavesNav } from './use-saves-nav';
 
 type MobileNavProps = {
+  category: SavesCategory;
   tagFilter: string | null;
 };
 
@@ -35,8 +38,8 @@ const centerInRow = (chip: HTMLElement | null) => {
 
 // Horizontal, scrollable stand-in for the sidebar below the md breakpoint, where
 // the sidebar is hidden.
-export function MobileNav({ tagFilter }: MobileNavProps) {
-  const { category, tags, selectCategory, selectTag } = useSavesNav(tagFilter);
+export function MobileNav({ category, tagFilter }: MobileNavProps) {
+  const { tags, tagHref } = useSavesNav(tagFilter);
 
   return (
     <nav
@@ -44,20 +47,19 @@ export function MobileNav({ tagFilter }: MobileNavProps) {
       className="md:hidden -mx-4 mb-6 overflow-x-auto px-4 sm:-mx-6 sm:px-6 [scrollbar-width:none]"
     >
       <div className="flex w-max items-center gap-2 pb-1">
-        {SAVES_CATEGORIES.map(({ key, label, Icon }) => {
+        {SAVES_CATEGORIES.map(({ key, label, href, Icon }) => {
           const active = !tagFilter && category === key;
           return (
-            <button
+            <Link
               key={key}
               ref={active ? centerInRow : undefined}
-              type="button"
-              onClick={() => selectCategory(key)}
+              href={href}
               aria-current={active ? 'page' : undefined}
               className={cn(CHIP, active ? CHIP_ACTIVE : CHIP_IDLE)}
             >
               <Icon className="h-4 w-4" />
               {label}
-            </button>
+            </Link>
           );
         })}
 
@@ -66,17 +68,16 @@ export function MobileNav({ tagFilter }: MobileNavProps) {
         {tags.map((tag) => {
           const active = tagFilter === tag;
           return (
-            <button
+            <Link
               key={tag}
               ref={active ? centerInRow : undefined}
-              type="button"
-              onClick={() => selectTag(tag)}
+              href={tagHref(tag)}
               aria-current={active ? 'page' : undefined}
               className={cn(CHIP, active ? CHIP_ACTIVE : CHIP_IDLE)}
             >
               <Hash className="h-3.5 w-3.5" />
               {tag}
-            </button>
+            </Link>
           );
         })}
       </div>
