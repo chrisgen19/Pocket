@@ -34,14 +34,18 @@ export type BookmarkHandlers = {
 type BookmarkActionsProps = {
   bookmark: Bookmark;
   handlers: BookmarkHandlers;
-  /** Being saved again from the header box: tags can't be edited until it finishes. */
+  /**
+   * Being saved again from the header box. Archive, Delete and Edit tags wait until it
+   * finishes: the server's upsert would recreate a deleted row, un-archive it, and its
+   * tag merge isn't atomic with an edit.
+   */
   busy?: boolean;
   className?: string;
 };
 
 // 36px targets on phones, 32px from sm up.
 const ICON_BUTTON =
-  'inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:size-8';
+  'inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50 sm:size-8';
 
 /** Favorite and archive toggles plus a menu with the rest (edit tags, copy link, delete). */
 export function BookmarkActions({ bookmark, handlers, busy, className }: BookmarkActionsProps) {
@@ -82,7 +86,8 @@ export function BookmarkActions({ bookmark, handlers, busy, className }: Bookmar
       <button
         type="button"
         aria-label={archiveLabel}
-        title={archiveLabel}
+        title={busy ? `${archiveLabel} (available once refreshed)` : archiveLabel}
+        disabled={busy}
         onClick={() => handlers.onToggleArchive(bookmark)}
         className={cn(ICON_BUTTON, 'hidden sm:inline-flex')}
       >
@@ -93,7 +98,11 @@ export function BookmarkActions({ bookmark, handlers, busy, className }: Bookmar
           <Ellipsis className="size-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-44">
-          <DropdownMenuItem className="py-1.5" onClick={() => handlers.onToggleArchive(bookmark)}>
+          <DropdownMenuItem
+            className="py-1.5"
+            disabled={busy}
+            onClick={() => handlers.onToggleArchive(bookmark)}
+          >
             <ArchiveIcon /> {archiveLabel}
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -110,6 +119,7 @@ export function BookmarkActions({ bookmark, handlers, busy, className }: Bookmar
           <DropdownMenuItem
             variant="destructive"
             className="py-1.5"
+            disabled={busy}
             onClick={() => handlers.onDelete(bookmark)}
           >
             <Trash2 /> Delete

@@ -38,6 +38,8 @@ describe('classifyInput', () => {
     expect(classifyInput('a.com\nhttps://b.com/x c.org')).toEqual({
       kind: 'links',
       urls: ['https://a.com', 'https://b.com/x', 'https://c.org'],
+      skipped: [],
+      overLimit: 0,
     });
   });
 
@@ -55,14 +57,39 @@ describe('classifyInput', () => {
     expect(classifyInput('https://a.comhttps://b.com')).toEqual({
       kind: 'links',
       urls: ['https://a.com', 'https://b.com'],
+      skipped: [],
+      overLimit: 0,
     });
   });
 
-  it(`caps a pasted list at ${MAX_LINKS} links`, () => {
+  it(`caps a pasted list at ${MAX_LINKS} links and reports how many were left out`, () => {
     const text = Array.from({ length: MAX_LINKS + 5 }, (_, i) => `site${i}.com`).join(' ');
     const intent = classifyInput(text);
     expect(intent.kind).toBe('links');
-    if (intent.kind === 'links') expect(intent.urls).toHaveLength(MAX_LINKS);
+    if (intent.kind === 'links') {
+      expect(intent.urls).toHaveLength(MAX_LINKS);
+      expect(intent.overLimit).toBe(5);
+    }
+  });
+
+  it('reports incomplete entries in a pasted list instead of dropping them silently', () => {
+    expect(classifyInput('https://a.com https:// b.com')).toEqual({
+      kind: 'links',
+      urls: ['https://a.com', 'https://b.com'],
+      skipped: ['https://'],
+      overLimit: 0,
+    });
+    // One good link plus a bad one is still a list, so the panel can show what's skipped.
+    expect(classifyInput('https://a.com https://')).toEqual({
+      kind: 'links',
+      urls: ['https://a.com'],
+      skipped: ['https://'],
+      overLimit: 0,
+    });
+  });
+
+  it('flags a list where no entry is a complete address', () => {
+    expect(classifyInput('https:// http://').kind).toBe('invalid');
   });
 
   it.each([

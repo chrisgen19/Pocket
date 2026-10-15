@@ -55,7 +55,10 @@ export function SavesView({ category = 'home', initialTag }: SavesViewProps = {}
   const bookmarks = bookmarksQuery.data ?? [];
 
   // Several pasted links aren't a search; one link filters, showing it if already saved.
-  const deferredDraft = useDeferredValue(draft);
+  // Typing filters with a deferred value so input stays responsive; clearing the box
+  // (Enter, Esc, Clear) applies at once, so the list never lags behind an empty box.
+  const deferred = useDeferredValue(draft);
+  const deferredDraft = draft === '' ? '' : deferred;
   const intent = classifyInput(deferredDraft);
   const query = intent.kind === 'links' ? '' : deferredDraft.trim();
 

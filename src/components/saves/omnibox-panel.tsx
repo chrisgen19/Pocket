@@ -2,7 +2,7 @@
 
 import { CircleAlert, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { displayUrl, type OmniboxIntent } from '@/features/saves/omnibox';
+import { displayUrl, MAX_LINKS, type OmniboxIntent } from '@/features/saves/omnibox';
 import type { Bookmark } from '@/features/saves/types';
 import { TagChipsInput } from './tag-chips-input';
 
@@ -26,6 +26,21 @@ const existingNote = (existing: Bookmark): string =>
   existing.isArchived
     ? 'Already in your saves, in Archive. Saving again refreshes it and moves it back to Home.'
     : 'Already in your saves. Saving again refreshes its title and image.';
+
+/** What a pasted list won't save (incomplete entries, links past the limit), or null. */
+const leftOutNote = (skipped: string[], overLimit: number): string | null => {
+  const parts: string[] = [];
+  if (skipped.length > 0) {
+    const more = skipped.length > 3 ? ` and ${skipped.length - 3} more` : '';
+    const what = skipped.length === 1 ? 'a complete web address' : 'complete web addresses';
+    parts.push(`Skipping ${skipped.slice(0, 3).join(', ')}${more}: not ${what}.`);
+  }
+  if (overLimit > 0) {
+    const links = overLimit === 1 ? '1 more link is' : `${overLimit} more links are`;
+    parts.push(`${links} left out: up to ${MAX_LINKS} save at a time.`);
+  }
+  return parts.length > 0 ? parts.join(' ') : null;
+};
 
 /** Shown under the header box when its text is a link (or several): save, with tags. */
 export function OmniboxPanel(props: OmniboxPanelProps) {
@@ -55,6 +70,7 @@ export function OmniboxPanel(props: OmniboxPanelProps) {
     : existing > 0
       ? `Press Enter to save them. ${existing} already in your saves will be refreshed.`
       : 'Press Enter to save them to Home.';
+  const leftOut = intent.kind === 'links' ? leftOutNote(intent.skipped, intent.overLimit) : null;
 
   return (
     <div tabIndex={-1} className={PANEL}>
@@ -76,6 +92,12 @@ export function OmniboxPanel(props: OmniboxPanelProps) {
           )}
           <p id={summaryId} className="mt-1 text-xs text-muted-foreground">
             {note}
+            {leftOut && (
+              <span className="mt-1 flex items-start gap-1.5 break-all text-destructive">
+                <CircleAlert className="mt-px size-3.5 shrink-0" />
+                {leftOut}
+              </span>
+            )}
           </p>
         </div>
         <Button onClick={props.onSubmit} className="h-9 shrink-0 px-3.5 hover:bg-primary/90">

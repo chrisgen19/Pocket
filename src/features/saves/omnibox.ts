@@ -8,7 +8,8 @@ export type OmniboxIntent =
   | { kind: 'empty' }
   | { kind: 'search'; query: string }
   | { kind: 'link'; url: string }
-  | { kind: 'links'; urls: string[] }
+  /** `skipped`: entries that aren't complete web addresses; `overLimit`: links past MAX_LINKS. */
+  | { kind: 'links'; urls: string[]; skipped: string[]; overLimit: number }
   | { kind: 'invalid'; message: string };
 
 const HTTP_RE = /^https?:\/\//i;
@@ -58,6 +59,21 @@ const uniqueUrls = (tokens: string[]): string[] => [
   ...new Set(tokens.map(toUrl).filter((url): url is string => url !== null)),
 ];
 
+const INCOMPLETE = "That doesn't look like a complete web address.";
+
+/**
+ * Several link-like tokens. Entries that don't parse and links past MAX_LINKS are
+ * reported, not dropped silently, so the panel can say what won't be saved.
+ */
+const classifyLinkList = (tokens: string[]): OmniboxIntent => {
+  const skipped = tokens.filter((token) => toUrl(token) === null);
+  const all = uniqueUrls(tokens);
+  const urls = all.slice(0, MAX_LINKS);
+  if (urls.length === 0) return { kind: 'invalid', message: INCOMPLETE };
+  if (urls.length === 1 && skipped.length === 0) return { kind: 'link', url: urls[0] };
+  return { kind: 'links', urls, skipped, overLimit: all.length - urls.length };
+};
+
 /** Decides between search, saving one link, saving several, or explaining a bad link. */
 export const classifyInput = (raw: string): OmniboxIntent => {
   const text = raw.trim();
@@ -68,9 +84,7 @@ export const classifyInput = (raw: string): OmniboxIntent => {
     const [token] = tokens;
     if (isLinkLike(token)) {
       const url = toUrl(token);
-      return url
-        ? { kind: 'link', url }
-        : { kind: 'invalid', message: "That doesn't look like a complete web address." };
+      return url ? { kind: 'link', url } : { kind: 'invalid', message: INCOMPLETE };
     }
     if (OTHER_SCHEME_RE.test(token)) {
       return { kind: 'invalid', message: 'Only web links (http or https) can be saved.' };
@@ -78,11 +92,7 @@ export const classifyInput = (raw: string): OmniboxIntent => {
     return { kind: 'search', query: text };
   }
 
-  if (tokens.every(isLinkLike)) {
-    const urls = uniqueUrls(tokens).slice(0, MAX_LINKS);
-    if (urls.length > 1) return { kind: 'links', urls };
-    if (urls.length === 1) return { kind: 'link', url: urls[0] };
-  }
+  if (tokens.every(isLinkLike)) return classifyLinkList(tokens);
   return { kind: 'search', query: text };
 };
 
