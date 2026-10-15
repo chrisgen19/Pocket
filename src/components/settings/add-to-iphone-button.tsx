@@ -49,8 +49,9 @@ export function AddToIphoneButton({ shortcutUrl, disabled, createKey }: AddToIph
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4 sm:flex-row sm:items-center">
       <p className="flex-grow text-sm text-gray-600">
-        On your iPhone, this creates a key, copies it and opens the Save to Pocket shortcut. Paste
-        the key when Shortcuts asks for it.
+        On your iPhone, this creates a key, copies it and opens the Save to Pocket shortcut. Add it,
+        then paste the key when Shortcuts asks for it, or into the shortcut's Text action if it
+        doesn't ask.
       </p>
       <button
         type="button"
