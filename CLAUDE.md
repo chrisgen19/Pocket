@@ -120,7 +120,7 @@ When the API arrives, the Zustand store in `src/features/saves/store.ts` should 
 
 `extension/` holds the MV3 Chrome extension (Vite + `@crxjs/vite-plugin`, React 19, Tailwind v4, Zod). It saves the active tab to Pocket. See `extension/README.md` for full setup.
 
-- **Installs separately:** not a pnpm workspace member (`pnpm-workspace.yaml` lists only `.`) and has its own `pnpm-lock.yaml`. Excluded from the root `tsconfig.json`, so root `tsc` does not check it. Work inside the folder: `cd extension && pnpm install`, then `pnpm dev` / `pnpm build` / `pnpm typecheck`.
+- **Installs separately:** not a pnpm workspace member (`pnpm-workspace.yaml` lists only `.`) and has its own `pnpm-lock.yaml` and `extension/pnpm-workspace.yaml`. That file makes `extension/` its own workspace root (otherwise pnpm 11 walks up and installs the web app instead) and holds its `allowBuilds` list (esbuild); add any new dependency with a build script there. Excluded from the root `tsconfig.json`, so root `tsc` does not check it. Work inside the folder: `cd extension && pnpm install`, then `pnpm dev` / `pnpm build` / `pnpm typecheck`.
 - **Config:** `extension/.env` (gitignored, copy from `.env.example`) sets `VITE_API_BASE_URL` to the web app origin.
 - **Auth:** reuses the web app's Better Auth cookie session via `GET /api/auth/get-session`.
 - **Server wiring:** the web app's `EXTENSION_IDS` env var (comma-separated extension IDs, optional, 32-char a-p IDs; schema in `src/lib/extension-ids.ts`) drives both:

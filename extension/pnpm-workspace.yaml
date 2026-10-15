@@ -1,0 +1,12 @@
+# Makes extension/ its own workspace root. Without this file, pnpm 11 walks up to the
+# repo's pnpm-workspace.yaml, so `cd extension && pnpm install` silently installed the
+# web app instead and never created extension/node_modules. The root workspace lists
+# only '.', so this file doesn't change root installs.
+packages:
+  - '.'
+
+# pnpm 11 reads build-script approval from here (not package.json) and aborts the
+# install with ERR_PNPM_IGNORED_BUILDS for any dependency that isn't listed.
+allowBuilds:
+  # Vite's bundler. Its postinstall only verifies the platform-specific binary.
+  esbuild: true
