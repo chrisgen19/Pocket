@@ -3,6 +3,8 @@
 import { Link as LinkIcon, Loader2, Plus } from 'lucide-react';
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { useCreateBookmark } from '@/features/saves/hooks';
+import { createBookmarkSchema } from '@/features/saves/schemas';
+import { useToastStore } from '@/features/saves/toast-store';
 import { parseTags } from '@/features/saves/utils';
 import { TagInput } from './tag-input';
 
@@ -20,6 +22,7 @@ export const AddBookmarkForm = forwardRef<AddBookmarkFormHandle, AddBookmarkForm
     const [url, setUrl] = useState('');
     const [tags, setTags] = useState('');
     const createMutation = useCreateBookmark();
+    const showToast = useToastStore((s) => s.show);
 
     useImperativeHandle(ref, () => ({
       focus: () => {
@@ -33,8 +36,16 @@ export const AddBookmarkForm = forwardRef<AddBookmarkFormHandle, AddBookmarkForm
       const raw = url.trim();
       if (!raw) return;
 
+      // Same rules as the server: bare domains get https://, only http(s) is allowed.
+      const parsedUrl = createBookmarkSchema.shape.url.safeParse(raw);
+      if (!parsedUrl.success) {
+        showToast('Enter a web address, like example.com or https://example.com/page');
+        urlRef.current?.focus();
+        return;
+      }
+
       try {
-        await createMutation.mutateAsync({ url: raw, tags: parseTags(tags) });
+        await createMutation.mutateAsync({ url: parsedUrl.data, tags: parseTags(tags) });
         setUrl('');
         setTags('');
       } catch {
@@ -55,9 +66,16 @@ export const AddBookmarkForm = forwardRef<AddBookmarkFormHandle, AddBookmarkForm
             </div>
             <input
               ref={urlRef}
-              type="url"
+              // Text, not type="url": the browser's url check rejects bare domains like
+              // example.com, which the schema accepts by adding https://.
+              type="text"
+              inputMode="url"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              aria-label="URL to save"
               required
-              placeholder="Save a URL..."
+              placeholder="Save a URL, e.g. example.com"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               disabled={submitting}

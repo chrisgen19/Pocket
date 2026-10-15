@@ -26,8 +26,18 @@ export function timeAgo(timestamp: number): string {
   return 'just now';
 }
 
+// A leading "scheme:" such as "https:", "mailto:" or "javascript:". A digit right after
+// the colon means host:port ("example.com:8080", "localhost:3000"), not a scheme.
+const SCHEME_RE = /^[a-z][a-z0-9+.-]*:(?!\d)/i;
+
+/**
+ * Turns user input into an absolute URL to validate: trims it and adds "https://" when
+ * there is no scheme, so "example.com/path" becomes "https://example.com/path". An
+ * explicit scheme is kept as typed, so non-http(s) input stays rejectable.
+ */
 export function normalizeUrl(raw: string): string {
-  return /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  const value = raw.trim();
+  return value && !SCHEME_RE.test(value) ? `https://${value}` : value;
 }
 
 export function parseTags(raw: string): string[] {
