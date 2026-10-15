@@ -162,7 +162,10 @@ const handleFailure = (qc: QueryClient, item: PendingSave, err: unknown): void =
     toast(`Couldn't save ${displayUrl(item.url)}. ${message}`);
   }
   if (isApiError(err) && err.status === 401) {
-    // The session ended, so nothing still queued can succeed either.
+    // The session ended, so nothing still queued can succeed either. Those never reach
+    // runItem, so count them here or the summary undercounts the batch.
+    const stillQueued = store.getState().items.filter((i) => i.status === 'queued').length;
+    batch = { ...batch, failed: batch.failed + stillQueued };
     store.setState((s) => ({
       items: s.items.map((i) =>
         i.url === item.url || i.status === 'queued'

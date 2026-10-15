@@ -30,14 +30,19 @@ const trimWrapping = (token: string): string => {
   return t;
 };
 
+// "http(s)://" glued straight onto a letter or digit, as when links lose the newline
+// between them ("a.comhttps://b.com"). After "=", "/", "?", "&" or "#" it is part of
+// the URL instead: redirects (?next=https://...) and archives (/web/2020/https://...).
+const GLUED_LINK_RE = /(?<=[a-z0-9])(?=https?:\/\/)/i;
+
 /**
- * Splits text into tokens on whitespace and before every "http(s)://", so links that
- * were pasted back to back without a separator still come apart.
+ * Splits text into tokens on whitespace and where links were glued together without a
+ * separator, keeping URLs embedded in another URL's query, path or fragment intact.
  */
 const tokenize = (text: string): string[] =>
   text
     .split(/\s+/)
-    .flatMap((part) => part.split(/(?=https?:\/\/)/i))
+    .flatMap((part) => part.split(GLUED_LINK_RE))
     .map(trimWrapping)
     .filter(Boolean);
 

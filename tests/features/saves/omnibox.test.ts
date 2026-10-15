@@ -41,6 +41,16 @@ describe('classifyInput', () => {
     });
   });
 
+  it.each([
+    'https://example.com/?next=https://other.com',
+    'https://www.google.com/url?q=https://example.com/a&sa=D',
+    'https://web.archive.org/web/2020/https://example.com/',
+    'https://example.com/#from=http://other.com',
+  ])('keeps the URL embedded in %j as part of one link', (input) => {
+    expect(classifyInput(input)).toEqual({ kind: 'link', url: input });
+    expect(extractLinks(`see ${input} here`)).toEqual([input]);
+  });
+
   it('splits links pasted back to back without a separator', () => {
     expect(classifyInput('https://a.comhttps://b.com')).toEqual({
       kind: 'links',
