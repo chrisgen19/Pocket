@@ -16,7 +16,10 @@ export type LinkMetadata = {
 
 const MAX_BYTES = 256 * 1024;
 const MAX_REDIRECTS = 5;
-const TIMEOUT_MS = 8000;
+// One budget for the whole fetch: every redirect hop, its safety check and the body
+// read. A per-request timeout alone let a save wait about 8s on each of up to 6
+// requests (~48s) before falling back.
+const FETCH_DEADLINE_MS = 10_000;
 const USER_AGENT = 'Mozilla/5.0 (compatible; PocketBot/0.1; +https://github.com/chrisgen19/Pocket)';
 
 // WordPress.com mShots: free, no API key, no watermark. Used as the last-resort
@@ -179,7 +182,10 @@ async function readCapped(res: StreamingResponse, max: number): Promise<string> 
   return new TextDecoder('utf-8', { fatal: false }).decode(merged);
 }
 
-async function safeFetchHtml(target: string): Promise<{ url: string; html: string } | null> {
+async function safeFetchHtml(
+  target: string,
+  signal: AbortSignal,
+): Promise<{ url: string; html: string } | null> {
   let currentUrl = target;
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     await assertSafeUrl(currentUrl);
@@ -189,7 +195,8 @@ async function safeFetchHtml(target: string): Promise<{ url: string; html: strin
         'User-Agent': USER_AGENT,
         Accept: 'text/html,application/xhtml+xml',
       },
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      // Shared by every hop, so aborting it also cancels an in-flight body read.
+      signal,
       dispatcher: safeDispatcher,
     });
 
@@ -228,6 +235,22 @@ function clampMetadata(m: LinkMetadata): LinkMetadata {
   };
 }
 
+/**
+ * Runs `task` with an abort signal that fires after `ms`, and settles by then even if
+ * the task ignores the signal (e.g. a DNS lookup in assertSafeUrl, which can't be
+ * aborted). Rejects with the signal's TimeoutError on expiry.
+ */
+async function withDeadline<T>(task: (signal: AbortSignal) => Promise<T>, ms: number): Promise<T> {
+  const signal = AbortSignal.timeout(ms);
+  const work = task(signal);
+  // The task may still settle after the deadline; don't leave its rejection unhandled.
+  work.catch(() => {});
+  const expired = new Promise<never>((_, reject) => {
+    signal.addEventListener('abort', () => reject(signal.reason), { once: true });
+  });
+  return Promise.race([work, expired]);
+}
+
 export async function fetchLinkMetadata(target: string): Promise<LinkMetadata> {
   // Validate up front so the caller (route handler) can map this to a 400.
   // Redirect hops are re-validated inside safeFetchHtml.
@@ -243,7 +266,7 @@ export async function fetchLinkMetadata(target: string): Promise<LinkMetadata> {
   });
 
   try {
-    const result = await safeFetchHtml(target);
+    const result = await withDeadline((signal) => safeFetchHtml(target, signal), FETCH_DEADLINE_MS);
     if (!result) return fallback;
 
     const { url: finalUrl, html } = result;
