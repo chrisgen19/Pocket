@@ -7,14 +7,14 @@ type ShortcutStepsProps = {
   header: string;
 };
 
-const CODE = 'rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-gray-800 whitespace-nowrap';
+const CODE = 'rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground whitespace-nowrap';
 // The endpoint is long, so it may wrap anywhere instead of overflowing on phones.
-const LONG_CODE = 'rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-gray-800 break-all';
+const LONG_CODE = 'rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground break-all';
 
 /** How to build the "Save to Pocket" shortcut for Safari's share sheet on iPhone. */
 export function ShortcutSteps({ endpoint, header }: ShortcutStepsProps) {
   return (
-    <ol className="list-decimal space-y-3 pl-5 text-sm text-gray-700 marker:text-gray-400">
+    <ol className="list-decimal space-y-3 pl-5 text-sm leading-6 text-foreground/85 marker:font-semibold marker:text-muted-foreground">
       <li>
         Create an API key above and copy it. On your iPhone, open <strong>Shortcuts</strong>, tap{' '}
         <strong>+</strong> and name the shortcut <strong>Save to Pocket</strong>.

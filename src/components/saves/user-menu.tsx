@@ -1,7 +1,7 @@
 'use client';
 
 import { useQueryClient } from '@tanstack/react-query';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import {
   DropdownMenu,
@@ -41,7 +41,7 @@ export function UserMenu() {
   }
 
   if (isPending) {
-    return <div className="w-8 h-8 bg-gray-100 rounded-full animate-pulse" />;
+    return <div className="size-8 rounded-full bg-muted motion-safe:animate-pulse" />;
   }
 
   if (!session?.user) {
@@ -49,7 +49,7 @@ export function UserMenu() {
       <button
         type="button"
         onClick={() => router.push('/login')}
-        className="text-sm font-medium text-gray-700 hover:text-gray-900"
+        className="rounded-md px-2 py-1 text-sm font-medium text-muted-foreground hover:text-foreground"
       >
         Sign in
       </button>
@@ -61,7 +61,7 @@ export function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+        className="flex size-8 items-center justify-center rounded-full bg-foreground text-sm font-semibold text-background"
         aria-label="Account menu"
       >
         {initial}
@@ -71,20 +71,20 @@ export function UserMenu() {
         <DropdownMenuGroup>
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col">
-              <span className="text-sm font-medium text-gray-900 truncate">
+              <span className="truncate text-sm font-medium text-foreground">
                 {session.user.name || 'Account'}
               </span>
-              <span className="text-xs text-gray-500 truncate">{session.user.email}</span>
+              <span className="truncate text-xs text-muted-foreground">{session.user.email}</span>
             </div>
           </DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => router.push('/settings')}>
-          <User className="w-4 h-4 mr-2" /> Settings
+        <DropdownMenuItem className="py-1.5" onClick={() => router.push('/settings')}>
+          <Settings /> Settings
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleSignOut} className="text-red-600 focus:text-red-700">
-          <LogOut className="w-4 h-4 mr-2" /> Sign out
+        <DropdownMenuItem variant="destructive" className="py-1.5" onClick={handleSignOut}>
+          <LogOut /> Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

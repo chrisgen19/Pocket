@@ -13,7 +13,7 @@ type SavesUIState = {
 export const useSavesStore = create<SavesUIState>()(
   persist(
     (set) => ({
-      view: 'grid',
+      view: 'list',
       setView: (v) => set({ view: v }),
     }),
     {

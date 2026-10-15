@@ -2,6 +2,7 @@
 
 import { Loader2, Smartphone } from 'lucide-react';
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 
 type AddToIphoneButtonProps = {
   /** Shared iCloud link of the "Save to Pocket" shortcut. */
@@ -47,25 +48,20 @@ export function AddToIphoneButton({ shortcutUrl, disabled, createKey }: AddToIph
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4 sm:flex-row sm:items-center">
-      <p className="flex-grow text-sm text-gray-600">
+    <div className="flex flex-col gap-3 rounded-lg border bg-background p-4 sm:flex-row sm:items-center">
+      <p className="flex-grow text-sm text-muted-foreground">
         On your iPhone, this creates a key, copies it and opens the Save to Pocket shortcut. Add it,
         then paste the key when Shortcuts asks for it, or into the shortcut's Text action if it
         doesn't ask.
       </p>
-      <button
-        type="button"
+      <Button
         onClick={addToIphone}
         disabled={pending || disabled}
-        className="flex flex-shrink-0 items-center justify-center gap-2 rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-60"
+        className="h-10 shrink-0 bg-foreground px-4 text-background hover:bg-foreground/85"
       >
-        {pending ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Smartphone className="h-4 w-4" />
-        )}
+        {pending ? <Loader2 className="animate-spin" /> : <Smartphone />}
         Add to iPhone
-      </button>
+      </Button>
     </div>
   );
 }

@@ -1,6 +1,9 @@
 'use client';
 
-import { Bookmark, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
+import Link from 'next/link';
+import { Logo } from '@/components/logo';
+import { Button } from '@/components/ui/button';
 import { UserMenu } from './user-menu';
 
 type NavbarProps = {
@@ -9,29 +12,22 @@ type NavbarProps = {
 
 export function Navbar({ onAddClick }: NavbarProps) {
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-red-500 rounded text-white flex items-center justify-center">
-              <Bookmark className="w-4 h-4" fill="currentColor" />
-            </div>
-            <span className="font-bold text-xl tracking-tight text-gray-900">Saves</span>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={onAddClick}
-              className="text-gray-500 hover:text-gray-900 focus:outline-none hidden sm:block"
-              title="Add URL"
-            >
-              <Plus className="w-5 h-5" />
-            </button>
-            <UserMenu />
-          </div>
+    <header className="sticky top-0 z-40 border-b bg-card">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+        <Link href="/saves" aria-label="Pocket home" className="rounded-md">
+          <Logo />
+        </Link>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            onClick={onAddClick}
+            className="hidden h-9 px-3 text-muted-foreground sm:inline-flex"
+          >
+            <Plus /> Save a link
+          </Button>
+          <UserMenu />
         </div>
       </div>
-    </nav>
+    </header>
   );
 }
