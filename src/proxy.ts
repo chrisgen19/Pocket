@@ -2,7 +2,7 @@ import { getSessionCookie } from 'better-auth/cookies';
 import { type NextRequest, NextResponse } from 'next/server';
 import { extensionIdsSchema } from '@/lib/extension-ids';
 
-const PROTECTED_PREFIXES = ['/saves'];
+const PROTECTED_PREFIXES = ['/saves', '/settings'];
 
 // Validate only EXTENSION_IDS here, never the full env schema: a throw at module
 // load would 500 every route, including the /api/health liveness probe. An

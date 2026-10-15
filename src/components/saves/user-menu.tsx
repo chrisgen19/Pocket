@@ -79,7 +79,7 @@ export function UserMenu() {
           </DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem disabled>
+        <DropdownMenuItem onClick={() => router.push('/settings')}>
           <User className="w-4 h-4 mr-2" /> Settings
         </DropdownMenuItem>
         <DropdownMenuSeparator />

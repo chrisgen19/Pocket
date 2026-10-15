@@ -13,16 +13,17 @@ datasource db {
 // Models follow the Better Auth Prisma adapter contract.
 
 model User {
-  id            String    @id
+  id            String     @id
   name          String
-  email         String    @unique
-  emailVerified Boolean   @default(false)
+  email         String     @unique
+  emailVerified Boolean    @default(false)
   image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
   sessions      Session[]
   accounts      Account[]
   bookmarks     Bookmark[]
+  apiKeys       Apikey[]
 
   @@map("users")
 }
@@ -69,6 +70,40 @@ model Verification {
   updatedAt  DateTime @updatedAt
 
   @@map("verifications")
+}
+
+// Better Auth API key plugin (@better-auth/api-key). The model must be named Apikey
+// so the adapter finds prisma.apikey; fields mirror the plugin's schema. referenceId
+// is the owning user's id. `key` stores a SHA-256 hash, never the raw key.
+model Apikey {
+  id                  String    @id
+  configId            String    @default("default")
+  name                String?
+  start               String?
+  referenceId         String
+  prefix              String?
+  key                 String
+  refillInterval      Int?
+  refillAmount        Int?
+  lastRefillAt        DateTime?
+  enabled             Boolean?  @default(true)
+  rateLimitEnabled    Boolean?  @default(true)
+  rateLimitTimeWindow Int?      @default(60000)
+  rateLimitMax        Int?      @default(30)
+  requestCount        Int?      @default(0)
+  remaining           Int?
+  lastRequest         DateTime?
+  expiresAt           DateTime?
+  createdAt           DateTime
+  updatedAt           DateTime
+  permissions         String?
+  metadata            String?
+  user                User      @relation(fields: [referenceId], references: [id], onDelete: Cascade)
+
+  @@index([configId])
+  @@index([referenceId])
+  @@index([key])
+  @@map("api_keys")
 }
 
 // ---------- Pocket domain ----------
