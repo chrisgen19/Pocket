@@ -8,7 +8,7 @@ import {
   useSaveLinks,
   useUpdateBookmark,
 } from '@/features/saves/hooks';
-import { classifyInput } from '@/features/saves/omnibox';
+import { classifyInput, searchQueryFor } from '@/features/saves/omnibox';
 import { useSaveQueueStore } from '@/features/saves/save-queue-store';
 import { useSavesStore } from '@/features/saves/store';
 import type { SavesCategory } from '@/features/saves/types';
@@ -60,7 +60,7 @@ export function SavesView({ category = 'home', initialTag }: SavesViewProps = {}
   const deferred = useDeferredValue(draft);
   const deferredDraft = draft === '' ? '' : deferred;
   const intent = classifyInput(deferredDraft);
-  const query = intent.kind === 'links' ? '' : deferredDraft.trim();
+  const query = searchQueryFor(deferredDraft, intent);
 
   const visible = useVisibleBookmarks(bookmarks, category, tagFilter, query);
   const savedElsewhere =

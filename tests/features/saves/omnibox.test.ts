@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { classifyInput, displayUrl, extractLinks, MAX_LINKS } from '@/features/saves/omnibox';
+import {
+  classifyInput,
+  displayUrl,
+  extractLinks,
+  MAX_LINKS,
+  searchQueryFor,
+} from '@/features/saves/omnibox';
 
 describe('classifyInput', () => {
   it.each(['', '   '])('treats %j as empty', (input) => {
@@ -118,6 +124,14 @@ describe('extractLinks', () => {
     expect(extractLinks('a.com\nb.com/path\n')).toEqual(['https://a.com', 'https://b.com/path']);
   });
 
+  it(`keeps links past ${MAX_LINKS}, so the classifier can report what it leaves out`, () => {
+    const pasted = Array.from({ length: MAX_LINKS + 10 }, (_, i) => `https://site${i}.com`);
+    const links = extractLinks(pasted.join('\n'));
+    expect(links).toHaveLength(MAX_LINKS + 10);
+    const intent = classifyInput(links.join(' '));
+    expect(intent.kind === 'links' && intent.overLimit).toBe(10);
+  });
+
   it('returns nothing for text without links', () => {
     expect(extractLinks('just some words')).toEqual([]);
     expect(extractLinks('')).toEqual([]);
@@ -131,5 +145,27 @@ describe('displayUrl', () => {
     ['https://a.com/x?q=1', 'a.com/x?q=1'],
   ])('shortens %j to %j', (url, expected) => {
     expect(displayUrl(url)).toBe(expected);
+  });
+});
+
+describe('searchQueryFor', () => {
+  const query = (raw: string) => searchQueryFor(raw, classifyInput(raw));
+
+  it('searches for typed words as they are', () => {
+    expect(query('  react hooks ')).toBe('react hooks');
+  });
+
+  it('searches for a link without the punctuation around it', () => {
+    expect(query('(https://a.com).')).toBe('https://a.com');
+    expect(query('"zed.dev/blog",')).toBe('zed.dev/blog');
+  });
+
+  it('keeps a dotted word as typed, so "next.js" still matches titles', () => {
+    expect(query('next.js')).toBe('next.js');
+  });
+
+  it('does not search while the box holds several links or nothing', () => {
+    expect(query('a.com b.com')).toBe('');
+    expect(query('   ')).toBe('');
   });
 });

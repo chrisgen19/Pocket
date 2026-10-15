@@ -98,12 +98,24 @@ export const classifyInput = (raw: string): OmniboxIntent => {
 
 /**
  * Links in pasted text. Links with a scheme are always picked up; bare domains only
- * when the text is nothing but links, so prose mentioning "Next.js" isn't a link.
+ * when the text is nothing but links, so prose mentioning "Next.js" isn't a link. Not
+ * capped: classifyInput applies MAX_LINKS and reports how many it leaves out.
  */
 export const extractLinks = (text: string): string[] => {
   const tokens = tokenize(text);
   const picked = tokens.every(isLinkLike) ? tokens : tokens.filter((t) => HTTP_RE.test(t));
-  return uniqueUrls(picked).slice(0, MAX_LINKS);
+  return uniqueUrls(picked);
+};
+
+/**
+ * What the list filters on for the box's text ('' for nothing). A link is searched
+ * without the punctuation around it, so "(https://a.com)." finds its save. It is not
+ * searched as the full URL: "next.js" reads as a link too and must still match titles.
+ */
+export const searchQueryFor = (raw: string, intent: OmniboxIntent): string => {
+  if (intent.kind === 'empty' || intent.kind === 'links') return '';
+  const text = raw.trim();
+  return intent.kind === 'link' ? trimWrapping(text) : text;
 };
 
 /** "https://www.zed.dev/blog/" -> "zed.dev/blog", for showing a link compactly. */
