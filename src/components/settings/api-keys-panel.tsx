@@ -4,9 +4,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { KeyRound, Loader2, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { authClient } from '@/lib/auth-client';
+import { AddToIphoneButton } from './add-to-iphone-button';
 import { NewKeyNotice } from './new-key-notice';
 
+type ApiKeysPanelProps = {
+  /** Shared iCloud link of the "Save to Pocket" shortcut; unset hides "Add to iPhone". */
+  shortcutUrl?: string;
+};
+
 const KEYS_QUERY = ['api-keys'] as const;
+const SHORTCUT_KEY_NAME = 'iPhone Shortcut';
 
 const listKeys = async () => {
   const { data, error } = await authClient.apiKey.list();
@@ -15,15 +22,15 @@ const listKeys = async () => {
 };
 
 /** Create, list and revoke personal API keys (used by the Apple Shortcuts action). */
-export function ApiKeysPanel() {
+export function ApiKeysPanel({ shortcutUrl }: ApiKeysPanelProps) {
   const qc = useQueryClient();
-  const [name, setName] = useState('iPhone Shortcut');
+  const [name, setName] = useState(SHORTCUT_KEY_NAME);
   const [newKey, setNewKey] = useState<string | null>(null);
   const keysQuery = useQuery({ queryKey: KEYS_QUERY, queryFn: listKeys });
 
   const create = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await authClient.apiKey.create({ name: name.trim() || 'API key' });
+    mutationFn: async (keyName: string) => {
+      const { data, error } = await authClient.apiKey.create({ name: keyName });
       if (error) throw new Error(error.message ?? 'Could not create the key');
       return data.key;
     },
@@ -49,7 +56,7 @@ export function ApiKeysPanel() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          create.mutate();
+          create.mutate(name.trim() || 'API key');
         }}
         className="flex flex-col gap-3 sm:flex-row"
       >
@@ -78,7 +85,17 @@ export function ApiKeysPanel() {
         </button>
       </form>
 
-      {newKey && <NewKeyNotice apiKey={newKey} onDismiss={() => setNewKey(null)} />}
+      {shortcutUrl && (
+        <AddToIphoneButton
+          shortcutUrl={shortcutUrl}
+          disabled={create.isPending}
+          createKey={() => create.mutateAsync(SHORTCUT_KEY_NAME)}
+        />
+      )}
+
+      {newKey && (
+        <NewKeyNotice apiKey={newKey} shortcutUrl={shortcutUrl} onDismiss={() => setNewKey(null)} />
+      )}
 
       {actionError && (
         <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">

@@ -36,7 +36,7 @@ export default async function SettingsPage() {
           Let apps that can't sign in, like Apple Shortcuts, save to your account. Treat a key like
           a password and revoke any you no longer use.
         </p>
-        <ApiKeysPanel />
+        <ApiKeysPanel shortcutUrl={env.IOS_SHORTCUT_URL} />
       </section>
 
       <section aria-labelledby="shortcut-heading">

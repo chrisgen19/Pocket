@@ -5,12 +5,14 @@ import { useState } from 'react';
 
 type NewKeyNoticeProps = {
   apiKey: string;
+  /** Shared iCloud link of the "Save to Pocket" shortcut, offered after copying. */
+  shortcutUrl?: string;
   onDismiss: () => void;
 };
 
 // The raw key is only returned once at creation (the database stores a hash), so it
 // has to be copied now.
-export function NewKeyNotice({ apiKey, onDismiss }: NewKeyNoticeProps) {
+export function NewKeyNotice({ apiKey, shortcutUrl, onDismiss }: NewKeyNoticeProps) {
   const [copied, setCopied] = useState(false);
 
   async function copy() {
@@ -45,13 +47,25 @@ export function NewKeyNotice({ apiKey, onDismiss }: NewKeyNoticeProps) {
           {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
-      <button
-        type="button"
-        onClick={onDismiss}
-        className="text-sm text-amber-900 underline underline-offset-2 hover:text-amber-700"
-      >
-        I've saved it
-      </button>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="text-sm text-amber-900 underline underline-offset-2 hover:text-amber-700"
+        >
+          I've saved it
+        </button>
+        {shortcutUrl && (
+          <a
+            href={shortcutUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="text-sm font-medium text-amber-900 underline underline-offset-2 hover:text-amber-700"
+          >
+            Add the shortcut to your iPhone
+          </a>
+        )}
+      </div>
     </div>
   );
 }
