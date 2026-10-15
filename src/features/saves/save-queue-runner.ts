@@ -6,7 +6,13 @@ import { isApiError } from '@/lib/api-error';
 import * as api from './api';
 import { BOOKMARKS_KEY, isUrlCached, upsertSavedBookmark } from './cache';
 import { displayUrl } from './omnibox';
-import { isQueueActive, type PendingSave, useSaveQueueStore } from './save-queue-store';
+import {
+  isQueueActive,
+  listsNewSave,
+  type PendingSave,
+  showsPendingRows,
+  useSaveQueueStore,
+} from './save-queue-store';
 import { useToastStore } from './toast-store';
 
 // Each save waits on the server fetching the page (up to ~10s), so a pasted list runs
@@ -109,7 +115,11 @@ const runItem = async (qc: QueryClient, item: PendingSave, epoch: number): Promi
     const previous = await upsertSavedBookmark(qc, bookmark, created, isCurrent);
     remove(item.url);
     batch = { ...batch, saved: batch.saved + 1, lastUrl: item.url };
-    // In a batch the summary toast covers it.
+    // In a batch the summary toast covers these. A new save not listed in this view
+    // (Favorites, Archive, another tag, a search) would otherwise vanish silently.
+    if (created && batch.total === 1 && !listsNewSave(store.getState().view, item.tags)) {
+      toast(`Saved ${displayUrl(item.url)} to Home`);
+    }
     if (!created && batch.total === 1) {
       toast(
         previous?.isArchived
@@ -145,6 +155,11 @@ const handleFailure = (qc: QueryClient, item: PendingSave, err: unknown): void =
     remove(item.url);
     toast(`Couldn't refresh ${displayUrl(item.url)}. ${message}`);
     return;
+  }
+  // The failed row stays in the queue, but rows are hidden while searching. A batch's
+  // summary toast covers several links.
+  if (batch.total === 1 && !showsPendingRows(store.getState().view)) {
+    toast(`Couldn't save ${displayUrl(item.url)}. ${message}`);
   }
   if (isApiError(err) && err.status === 401) {
     // The session ended, so nothing still queued can succeed either.

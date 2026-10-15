@@ -33,22 +33,19 @@ export const useVisibleBookmarks = (
 
 /**
  * Splits the save queue for the current view: `pending` are new links to show as rows
- * at the top (Home, or a tag view they're tagged for, and not while searching);
- * `busyUrls` are listed saves being saved again, shown as busy in place.
+ * at the top, in every view so progress and failures are never hidden (except while
+ * searching; see showsPendingRows); `busyUrls` are saves already listed somewhere that
+ * are being saved again, shown as busy in place.
  */
 export const splitPendingSaves = (
   items: PendingSave[],
   bookmarks: Bookmark[],
-  category: SavesCategory,
-  tagFilter: string | null,
   query: string,
 ): { pending: PendingSave[]; busyUrls: Set<string> } => {
   const listed = new Set(bookmarks.map((b) => b.url));
   const busyUrls = new Set(
     items.filter((i) => i.status !== 'error' && listed.has(i.url)).map((i) => i.url),
   );
-  if (category !== 'home' || query) return { pending: [], busyUrls };
-  const tag = tagFilter ? normalizeTag(tagFilter) : null;
-  const pending = items.filter((i) => !listed.has(i.url) && (!tag || i.tags.includes(tag)));
+  const pending = query ? [] : items.filter((i) => !listed.has(i.url));
   return { pending, busyUrls };
 };

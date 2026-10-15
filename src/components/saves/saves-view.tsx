@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useDeferredValue, useState } from 'react';
+import { useDeferredValue, useEffect, useState } from 'react';
 import {
   useBookmarks,
   useDeleteBookmark,
@@ -62,13 +62,14 @@ export function SavesView({ category = 'home', initialTag }: SavesViewProps = {}
   const visible = useVisibleBookmarks(bookmarks, category, tagFilter, query);
   const savedElsewhere =
     intent.kind === 'link' ? bookmarks.find((b) => b.url === intent.url) : undefined;
-  const { pending, busyUrls } = splitPendingSaves(
-    queueItems,
-    bookmarks,
-    category,
-    tagFilter,
-    query,
-  );
+  const { pending, busyUrls } = splitPendingSaves(queueItems, bookmarks, query);
+
+  // Tell the save queue what's on screen, so a result that can't show here gets a toast.
+  const searching = query !== '';
+  useEffect(() => {
+    useSaveQueueStore.setState({ view: { category, tagFilter, searching } });
+    return () => useSaveQueueStore.setState({ view: null });
+  }, [category, tagFilter, searching]);
 
   const handlers: BookmarkHandlers = {
     onToggleFavorite: (b) =>
