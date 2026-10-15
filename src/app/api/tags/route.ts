@@ -1,18 +1,16 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getSession } from '@/lib/session';
+import { authenticateRequest } from '@/lib/session';
 
 export async function GET() {
-  const session = await getSession();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const { userId, response } = await authenticateRequest();
+  if (response) return response;
 
   // Aggregate distinct tags from the user's bookmarks, sorted by usage frequency.
   const rows = await prisma.$queryRaw<Array<{ tag: string; count: bigint }>>`
     SELECT unnest(tags) AS tag, COUNT(*)::bigint AS count
     FROM bookmarks
-    WHERE "userId" = ${session.user.id}
+    WHERE "userId" = ${userId}
     GROUP BY tag
     ORDER BY count DESC, tag ASC
   `;

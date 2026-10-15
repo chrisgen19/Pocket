@@ -129,6 +129,15 @@ When the API arrives, the Zustand store in `src/features/saves/store.ts` should 
 - A new or changed extension ID (unpacked dev build vs Web Store build) must be added to `EXTENSION_IDS`, or the popup's API calls fail CORS/origin checks.
 - `extension/src/shared/schemas.ts` mirrors `src/features/saves/schemas.ts`: keep them in sync when request payloads change.
 
+## API keys (Apple Shortcuts)
+
+Personal API keys let clients that can't carry the session cookie (the iPhone "Save to Pocket" shortcut) call the bookmark API.
+
+- **Plugin:** `@better-auth/api-key` (pinned to the installed `better-auth` version) in `src/lib/auth.ts`. Keys are prefixed `pocket_`, stored hashed in the `api_keys` table (`Apikey` Prisma model, cascade-deleted with the user), rate-limited to 30 requests per minute (the plugin default is 10 per day).
+- **Auth path:** API routes call `authenticateRequest()` in `src/lib/session.ts`, which returns `{ userId }` or a ready `response` to return as is. It accepts an `x-api-key` header (401 if invalid or revoked, 429 with `Retry-After` if rate-limited, never falling back to the cookie) and otherwise uses the session cookie. Keys only work on routes that call it; `enableSessionForAPIKeys` stays off so a key can't act as a login on `/api/auth/*`.
+- **UI:** `/settings` (protected in `src/proxy.ts`, linked from the user menu) creates, lists and revokes keys and shows the Shortcut setup steps. The raw key is shown once.
+- **Prisma 7:** `prisma migrate dev` does not regenerate the client; run `pnpm db:generate` after schema changes (the build's `postinstall` does it on deploy).
+
 ## TODO — Roadmap
 
 ### App shell / pages

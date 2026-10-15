@@ -1,15 +1,13 @@
 import { NextResponse } from 'next/server';
 import { updateBookmarkSchema } from '@/features/saves/schemas';
 import { isPrismaError, prisma } from '@/lib/prisma';
-import { getSession } from '@/lib/session';
+import { authenticateRequest } from '@/lib/session';
 
 type Ctx = { params: Promise<{ id: string }> };
 
 export async function PATCH(request: Request, { params }: Ctx) {
-  const session = await getSession();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const { userId, response } = await authenticateRequest();
+  if (response) return response;
   const { id } = await params;
 
   const body = await request.json().catch(() => null);
@@ -24,7 +22,7 @@ export async function PATCH(request: Request, { params }: Ctx) {
   // Atomic update + read in one query to avoid a TOCTOU race where the row is
   // deleted between updateMany() and a follow-up findUnique().
   const updated = await prisma.bookmark.updateManyAndReturn({
-    where: { id, userId: session.user.id },
+    where: { id, userId },
     data: parsed.data,
   });
   if (updated.length === 0) {
@@ -34,17 +32,15 @@ export async function PATCH(request: Request, { params }: Ctx) {
 }
 
 export async function DELETE(_request: Request, { params }: Ctx) {
-  const session = await getSession();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const { userId, response } = await authenticateRequest();
+  if (response) return response;
   const { id } = await params;
 
   // delete() (not deleteMany) so the removed row comes back in one query: the
   // client keeps it for the undo toast, which sends it to /api/bookmarks/restore.
   try {
     const bookmark = await prisma.bookmark.delete({
-      where: { id, userId: session.user.id },
+      where: { id, userId },
     });
     return NextResponse.json({ ok: true, bookmark });
   } catch (err) {

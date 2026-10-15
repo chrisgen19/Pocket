@@ -3,26 +3,22 @@ import { fetchLinkMetadata } from '@/features/saves/metadata';
 import { BOOKMARK_FIELD_MAX, createBookmarkSchema, normalizeTags } from '@/features/saves/schemas';
 import { normalizeUrl } from '@/features/saves/utils';
 import { prisma } from '@/lib/prisma';
-import { getSession } from '@/lib/session';
+import { authenticateRequest } from '@/lib/session';
 import { UnsafeUrlError } from '@/lib/url-safety';
 
 export async function GET() {
-  const session = await getSession();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const { userId, response } = await authenticateRequest();
+  if (response) return response;
   const bookmarks = await prisma.bookmark.findMany({
-    where: { userId: session.user.id },
+    where: { userId },
     orderBy: { createdAt: 'desc' },
   });
   return NextResponse.json(bookmarks);
 }
 
 export async function POST(request: Request) {
-  const session = await getSession();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const { userId, response } = await authenticateRequest();
+  if (response) return response;
 
   const body = await request.json().catch(() => null);
   const parsed = createBookmarkSchema.safeParse(body);
@@ -54,7 +50,7 @@ export async function POST(request: Request) {
   // and merges new tags into the existing set. Existing tags are normalized too,
   // so rows saved before normalization don't keep "Design" next to "design".
   const existing = await prisma.bookmark.findUnique({
-    where: { userId_url: { userId: session.user.id, url } },
+    where: { userId_url: { userId, url } },
     select: { tags: true },
   });
   const mergedTags = existing
@@ -62,9 +58,9 @@ export async function POST(request: Request) {
     : parsed.data.tags;
 
   const bookmark = await prisma.bookmark.upsert({
-    where: { userId_url: { userId: session.user.id, url } },
+    where: { userId_url: { userId, url } },
     create: {
-      userId: session.user.id,
+      userId,
       url,
       title: metadata.title,
       domain: metadata.domain,
