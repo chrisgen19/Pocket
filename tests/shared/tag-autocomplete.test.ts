@@ -1,26 +1,5 @@
-import { filterSuggestions, splitAtCursor } from '@shared/tag-autocomplete';
+import { filterSuggestions, rankedSuggestions } from '@shared/tag-autocomplete';
 import { describe, expect, it } from 'vitest';
-
-describe('splitAtCursor', () => {
-  it.each([
-    ['', { before: '', current: '' }],
-    ['re', { before: '', current: 're' }],
-    ['  re', { before: '', current: 're' }],
-    ['design,', { before: 'design, ', current: '' }],
-    ['design, ', { before: 'design, ', current: '' }],
-    ['design,re', { before: 'design, ', current: 're' }],
-    ['design, re', { before: 'design, ', current: 're' }],
-    ['design,  re ', { before: 'design, ', current: 're' }],
-    ['a, b, c', { before: 'a, b, ', current: 'c' }],
-  ])('%j', (value, expected) => {
-    expect(splitAtCursor(value)).toEqual(expected);
-  });
-
-  it('appending a suggestion to `before` gives the committed value', () => {
-    const { before } = splitAtCursor('design,re');
-    expect(`${before}reading, `).toBe('design, reading, ');
-  });
-});
 
 describe('filterSuggestions', () => {
   const ALL = ['design', 'reading', 'dns', 'reference', 'networking', 'longform-articles'];
@@ -68,10 +47,33 @@ describe('filterSuggestions', () => {
   });
 });
 
-describe('picking a second tag (regression)', () => {
-  it('keeps the space after the previous tag', () => {
-    // Used to produce "reference,design, ": the space after the comma was dropped.
-    const { before } = splitAtCursor('reference, d');
-    expect(`${before}design, `).toBe('reference, design, ');
+describe('rankedSuggestions', () => {
+  const ALL = ['design-systems', 'web-design', 'design', 'reading', 'dns'];
+
+  it('puts an exact match first, then prefix matches, then the rest', () => {
+    expect(rankedSuggestions(ALL, 'design', [], 8)).toEqual([
+      'design',
+      'design-systems',
+      'web-design',
+    ]);
+  });
+
+  it('leaves out tags already chosen', () => {
+    expect(rankedSuggestions(ALL, 'design', ['design'], 8)).toEqual([
+      'design-systems',
+      'web-design',
+    ]);
+  });
+
+  it('suggests everything not chosen yet when nothing is typed, up to the limit', () => {
+    expect(rankedSuggestions(ALL, '', ['reading'], 3)).toEqual([
+      'design-systems',
+      'web-design',
+      'design',
+    ]);
+  });
+
+  it('ranks before applying the limit, so an exact match is never cut off', () => {
+    expect(rankedSuggestions(ALL, 'design', [], 1)).toEqual(['design']);
   });
 });

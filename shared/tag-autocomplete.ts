@@ -1,25 +1,10 @@
-// Tag autocomplete logic shared by the web app (src/components/saves/tag-input.tsx)
-// and the Chrome extension (extension/src/popup/tag-input.tsx), imported as
+// Tag autocomplete logic shared by the web app (src/components/saves/tag-chips-input.tsx)
+// and the Chrome extension (extension/src/popup/tag-chips-input.tsx), imported as
 // "@shared/tag-autocomplete" by both.
 //
 // Keep this file free of imports: it is bundled by two separate builds (Next.js and
 // the extension's Vite build), each with its own node_modules. Importing React or any
 // other package here would make the extension bundle a second copy from the root.
-
-/**
- * Splits the comma-separated tag input at its last comma, so `current` is the tag being
- * typed and `before` is everything ahead of it, normalized to end in ", " when non-empty.
- */
-export const splitAtCursor = (value: string): { before: string; current: string } => {
-  const lastComma = value.lastIndexOf(',');
-  if (lastComma === -1) return { before: '', current: value.trimStart() };
-  return {
-    // The slice stops at the comma, so always add one space: skipping it when one
-    // followed the comma used to drop that space ("reference, d" -> "reference,design, ").
-    before: `${value.slice(0, lastComma + 1)} `,
-    current: value.slice(lastComma + 1).trim(),
-  };
-};
 
 /**
  * Suggestions for the tag being typed: case-insensitive substring matches, skipping tags
@@ -41,5 +26,27 @@ export const filterSuggestions = (
   return suggestions
     .filter((s) => !already.has(s.toLowerCase()) || s.toLowerCase() === q)
     .filter((s) => (q ? s.toLowerCase().includes(q) : true))
+    .slice(0, limit);
+};
+
+// Exact match first, then prefix matches, so typing "design" never picks "design-systems".
+const rank = (tag: string, typed: string) => (tag === typed ? 0 : tag.startsWith(typed) ? 1 : 2);
+
+/**
+ * Suggestions for a chips input: what `typed` matches, minus the tags already chosen,
+ * best matches first (exact, then prefix, then substring), at most `limit`.
+ */
+export const rankedSuggestions = (
+  suggestions: string[],
+  typed: string,
+  chosen: string[],
+  limit: number,
+): string[] => {
+  // filterSuggestions keeps an exact match even when it's already in the input (the
+  // comma field's current word is part of it); a chosen chip should never come back.
+  const taken = new Set(chosen.map((t) => t.toLowerCase()));
+  return filterSuggestions(suggestions, typed, chosen.join(','), Number.POSITIVE_INFINITY)
+    .filter((s) => !taken.has(s.toLowerCase()))
+    .sort((a, b) => rank(a, typed) - rank(b, typed))
     .slice(0, limit);
 };

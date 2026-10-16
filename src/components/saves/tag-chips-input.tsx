@@ -1,9 +1,12 @@
 'use client';
 
+import { rankedSuggestions } from '@shared/tag-autocomplete';
 import { normalizeTag } from '@shared/tags';
 import { useId, useMemo, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { rankedSuggestions, TagChip, TagSuggestionList } from './tag-chips-parts';
+import { TagChip, TagSuggestionList } from './tag-chips-parts';
+
+const SUGGESTION_LIMIT = 6;
 
 type TagChipsInputProps = {
   value: string[];
@@ -36,7 +39,7 @@ export function TagChipsInput(props: TagChipsInputProps) {
 
   const current = draft.trim().toLowerCase();
   const matches = useMemo(
-    () => rankedSuggestions(props.suggestions, current, value),
+    () => rankedSuggestions(props.suggestions, current, value, SUGGESTION_LIMIT),
     [props.suggestions, current, value],
   );
   const showList = open && matches.length > 0;

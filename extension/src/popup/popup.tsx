@@ -1,18 +1,16 @@
-import { Bookmark, Check, ExternalLink, Loader2, LogIn, UserPlus } from 'lucide-react';
+import { Check, ExternalLink, Loader2, LogIn, UserPlus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { createBookmark, getSession, listTags, type SessionResponse } from '@/lib/api';
 import { LOGIN_URL, REGISTER_URL, SAVES_URL } from '@/lib/config';
 import { Logo } from './logo';
-import { TagInput } from './tag-input';
-
-const TAGS_INPUT_ID = 'tags-input';
+import { TagChipsInput } from './tag-chips-input';
 
 type Status = 'idle' | 'saving' | 'saved' | 'error';
 
 export function Popup() {
   const [session, setSession] = useState<SessionResponse | undefined>(undefined);
   const [tab, setTab] = useState<chrome.tabs.Tab | null>(null);
-  const [tagsInput, setTagsInput] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
   const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
   const [status, setStatus] = useState<Status>('idle');
   const [errorMsg, setErrorMsg] = useState('');
@@ -46,10 +44,6 @@ export function Popup() {
     setStatus('saving');
     setErrorMsg('');
     try {
-      const tags = tagsInput
-        .split(',')
-        .map((t) => t.trim())
-        .filter(Boolean);
       await createBookmark({ url, tags });
       setStatus('saved');
       setTimeout(() => window.close(), 700);
@@ -73,23 +67,37 @@ export function Popup() {
       </header>
 
       <div className="space-y-4 p-4">
-        <div className="space-y-1">
-          <div className="line-clamp-2 font-serif text-[1.0625rem] leading-6 font-medium">
-            {title || 'Untitled page'}
+        {/* Like the web app's save panel: Save beside the page, tags below. The tag
+            suggestions then open under the field without covering or moving Save. */}
+        <div className="flex items-start gap-3">
+          <div className="min-w-0 flex-1 space-y-1">
+            <div className="line-clamp-2 font-serif text-[1.0625rem] leading-6 font-medium">
+              {title || 'Untitled page'}
+            </div>
+            <div className="truncate text-xs text-muted-foreground">{url}</div>
           </div>
-          <div className="truncate text-xs text-muted-foreground">{url}</div>
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={!canSave}
+            className="flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-primary px-3.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {status === 'saving' && <Loader2 className="size-4 animate-spin" />}
+            {status === 'saved' && <Check className="size-4" />}
+            {status === 'saved' ? 'Saved' : status === 'saving' ? 'Saving…' : 'Save'}
+          </button>
         </div>
 
-        <div className="space-y-1">
-          <label htmlFor={TAGS_INPUT_ID} className="block text-xs font-medium">
-            Tags (comma-separated)
-          </label>
-          <TagInput
-            id={TAGS_INPUT_ID}
-            value={tagsInput}
-            onChange={setTagsInput}
+        <div className="space-y-1.5">
+          <p className="text-xs font-medium">Tags</p>
+          <TagChipsInput
+            value={tags}
+            onChange={setTags}
             suggestions={tagSuggestions}
+            label="Tags"
+            placeholder="Add tags, then press Enter to save"
             disabled={status === 'saving'}
+            onSubmit={onSave}
           />
         </div>
 
@@ -101,19 +109,6 @@ export function Popup() {
             {errorMsg}
           </div>
         )}
-
-        <button
-          type="button"
-          onClick={onSave}
-          disabled={!canSave}
-          className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {status === 'saving' && <Loader2 className="size-4 animate-spin" />}
-          {status === 'saved' && <Check className="size-4" />}
-          {status === 'idle' && <Bookmark className="size-4" />}
-          {status === 'error' && <Bookmark className="size-4" />}
-          {status === 'saved' ? 'Saved' : status === 'saving' ? 'Saving…' : 'Save to Pocket'}
-        </button>
       </div>
     </Shell>
   );
