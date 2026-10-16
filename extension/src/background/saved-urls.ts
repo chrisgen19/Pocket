@@ -25,12 +25,24 @@ const UNSAVED_ICON = {
 // shortcut: it is rebuilt from storage on the first read after a restart.
 let memo: Set<string> | null = null;
 
-const readUrls = async (): Promise<Set<string>> => {
-  if (memo) return memo;
-  const stored = await chrome.storage.local.get(STORAGE_KEY);
-  const urls = stored[STORAGE_KEY];
-  memo = new Set(Array.isArray(urls) ? (urls as string[]) : []);
-  return memo;
+// One shared storage read per worker start. A write that lands while it is in flight
+// (a save, a refresh) is newer than what the read returns, so it keeps its place.
+let loading: Promise<Set<string>> | null = null;
+
+const readUrls = (): Promise<Set<string>> => {
+  if (memo) return Promise.resolve(memo);
+  loading ??= chrome.storage.local.get(STORAGE_KEY).then(
+    (stored) => {
+      const urls = stored[STORAGE_KEY];
+      memo ??= new Set(Array.isArray(urls) ? (urls as string[]) : []);
+      return memo;
+    },
+    (err: unknown) => {
+      loading = null; // Let the next read try again.
+      throw err;
+    },
+  );
+  return loading;
 };
 
 // Never throws: a failed write (storage full or unavailable) must not turn a
@@ -104,14 +116,27 @@ export const setSaved = (url: string, saved: boolean): Promise<void> =>
     await writeUrls(next);
   });
 
+// The newest update per tab. Redirects and in-page navigations start updates in quick
+// succession; one still waiting must not paint the URL the tab has already left.
+let updateCount = 0;
+const latestTabUpdate = new Map<number, number>();
+
 /** Shows the saved or unsaved icon and tooltip on one tab. */
 export const updateActionForTab = async (tabId: number, url: string | undefined) => {
+  const update = ++updateCount;
+  latestTabUpdate.set(tabId, update);
+  const isLatest = () => latestTabUpdate.get(tabId) === update;
+
   const saved = Boolean(url && /^https?:/.test(url) && (await isSaved(url)));
   try {
+    if (!isLatest()) return;
     await chrome.action.setIcon({ tabId, path: saved ? SAVED_ICON : UNSAVED_ICON });
+    if (!isLatest()) return;
     await chrome.action.setTitle({ tabId, title: saved ? 'Saved to Pocket' : 'Save to Pocket' });
   } catch {
     // The tab closed before the icon was set.
+  } finally {
+    if (isLatest()) latestTabUpdate.delete(tabId);
   }
 };
 

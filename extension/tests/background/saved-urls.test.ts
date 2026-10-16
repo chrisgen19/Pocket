@@ -30,18 +30,39 @@ let store: Record<string, unknown> = {};
 let storageFull = false;
 const stored = () => store.savedUrls;
 
+// A storage read held open by the test answers with what was stored when it started,
+// like a real read that was already in flight when a newer write landed.
+let heldGet: Promise<void> | null = null;
+const holdNextGet = () => {
+  const release = deferred<void>();
+  heldGet = release.promise;
+  return () => release.resolve();
+};
+
+/** Lets every pending promise chain run, including ones several awaits deep. */
+const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+const setIcon = vi.fn(async (_details: unknown) => {});
+const setTitle = vi.fn(async (_details: { tabId: number; title: string }) => {});
+
 let cache: SavedUrls;
 
 beforeEach(async () => {
   store = {};
   storageFull = false;
+  heldGet = null;
   listSavedUrls.mockReset();
+  setIcon.mockClear();
+  setTitle.mockClear();
   vi.stubGlobal('chrome', {
     storage: {
       local: {
         get: async (key: string) => {
-          await Promise.resolve();
-          return key in store ? { [key]: structuredClone(store[key]) } : {};
+          const snapshot = key in store ? { [key]: structuredClone(store[key]) } : {};
+          const hold = heldGet;
+          heldGet = null;
+          await (hold ?? Promise.resolve());
+          return snapshot;
         },
         set: async (items: Record<string, unknown>) => {
           await Promise.resolve();
@@ -50,6 +71,7 @@ beforeEach(async () => {
         },
       },
     },
+    action: { setIcon, setTitle },
   });
   // A fresh module per test: its in-memory memo and refresh counter start empty.
   vi.resetModules();
@@ -144,6 +166,48 @@ describe('when storage writes fail', () => {
 
     await expect(cache.refreshSavedUrls()).resolves.toBeUndefined();
     expect(await cache.isSaved('https://a.example')).toBe(true);
+  });
+});
+
+describe('first read after the worker starts', () => {
+  it('does not let a slow read undo a save that landed meanwhile', async () => {
+    const release = holdNextGet();
+    const firstRead = cache.isSaved('https://new.example');
+    const save = cache.setSaved('https://new.example', true);
+    await settle();
+
+    release(); // Answers with the list from before the save.
+    await Promise.all([firstRead, save]);
+
+    expect(await cache.isSaved('https://new.example')).toBe(true);
+  });
+});
+
+describe('updateActionForTab', () => {
+  it('shows the URL the tab is on now when updates overlap', async () => {
+    store.savedUrls = ['https://left.example'];
+    const release = holdNextGet();
+    const older = cache.updateActionForTab(1, 'https://left.example');
+    const newer = cache.updateActionForTab(1, 'https://current.example');
+    await settle();
+
+    release();
+    await Promise.all([older, newer]);
+
+    expect(setIcon).toHaveBeenCalledTimes(1);
+    expect(setTitle).toHaveBeenLastCalledWith({ tabId: 1, title: 'Save to Pocket' });
+  });
+
+  it('updates different tabs independently', async () => {
+    store.savedUrls = ['https://saved.example'];
+
+    await Promise.all([
+      cache.updateActionForTab(1, 'https://saved.example'),
+      cache.updateActionForTab(2, 'https://other.example'),
+    ]);
+
+    expect(setTitle).toHaveBeenCalledWith({ tabId: 1, title: 'Saved to Pocket' });
+    expect(setTitle).toHaveBeenCalledWith({ tabId: 2, title: 'Save to Pocket' });
   });
 });
 
