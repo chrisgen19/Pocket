@@ -59,6 +59,7 @@ export async function listSavedUrls(): Promise<string[] | null> {
 
 export type SavedBookmark = {
   id: string;
+  url: string;
   createdAt: string;
   tags: string[];
   isArchived: boolean;
@@ -67,5 +68,7 @@ export type SavedBookmark = {
 /** The user's save of exactly this URL, or null when there is none. Throws on failure. */
 export async function findBookmarkByUrl(url: string): Promise<SavedBookmark | null> {
   const rows = await request<SavedBookmark[]>(`/api/bookmarks?url=${encodeURIComponent(url)}`);
-  return rows[0] ?? null;
+  // Match the URL rather than trusting the first row: a server without `?url=` support
+  // ignores it and returns the whole list, whose first row is just the newest save.
+  return rows.find((row) => row.url === url) ?? null;
 }
