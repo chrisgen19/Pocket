@@ -1,9 +1,9 @@
 import { fileURLToPath } from 'node:url';
 import { defineProject } from 'vitest/config';
 
-// The extension's test project. It runs from the repo root (`pnpm test` there lists it
-// in `test.projects`) with the root's Vitest, so the extension gets no extra
-// dependency; `vitest/config` resolves from the root node_modules.
+// The extension's test config. `cd extension && pnpm test` runs it with the extension's
+// own Vitest; the repo root's `pnpm test` also runs it as a project (listed in the
+// root `vitest.config.ts` under `test.projects`). Keep both Vitest versions the same.
 export default defineProject({
   resolve: {
     // Same aliases as extension/tsconfig.json.

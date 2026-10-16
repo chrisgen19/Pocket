@@ -57,7 +57,7 @@ Reload the extension in `chrome://extensions` (↻ on the card) after each rebui
 
 ## Tests
 
-Run from the **repo root**: `pnpm test` runs the web app's and the extension's tests, `pnpm exec vitest run --project extension` only these. They use the root's Vitest, so this folder needs no extra dependency; `vitest.config.ts` here is the extension's project config (aliases match `tsconfig.json`). Tests live in `tests/` and fake the `chrome.*` APIs they touch.
+`pnpm test` here runs the extension's tests with its own Vitest. The repo root's `pnpm test` runs them too, next to the web app's. `vitest.config.ts` has the same aliases as `tsconfig.json`, and `tsconfig.json` includes `tests/`, so `pnpm typecheck` checks the tests as well. Tests live in `tests/` and fake the `chrome.*` APIs they touch. Keep `vitest` here on the same version as the repo root's.
 
 ## Features (v1)
 - Click icon → popup with current tab URL/title, tag input, **Save to Pocket**
