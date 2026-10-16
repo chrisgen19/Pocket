@@ -13,6 +13,10 @@ export default defineConfig({
     // Pure functions only so far; switch per file with `// @vitest-environment happy-dom`
     // (and add the package) once component tests need a DOM.
     environment: 'node',
-    include: ['tests/**/*.test.ts'],
+    projects: [
+      { extends: true, test: { name: 'web', include: ['tests/**/*.test.ts'] } },
+      // Its own aliases (`@/` is extension/src there), so it can't share this config.
+      'extension/vitest.config.ts',
+    ],
   },
 });

@@ -6,9 +6,20 @@ import { prisma } from '@/lib/prisma';
 import { authenticateRequest } from '@/lib/session';
 import { UnsafeUrlError } from '@/lib/url-safety';
 
-export async function GET() {
+export async function GET(request: Request) {
   const { userId, response } = await authenticateRequest();
   if (response) return response;
+
+  // ?url= looks up one exact URL (the extension popup's "already saved" check) and
+  // answers with a 0 or 1 item array, so the response shape stays the same.
+  const url = new URL(request.url).searchParams.get('url');
+  if (url !== null) {
+    const bookmark = await prisma.bookmark.findUnique({
+      where: { userId_url: { userId, url } },
+    });
+    return NextResponse.json(bookmark ? [bookmark] : []);
+  }
+
   const bookmarks = await prisma.bookmark.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },

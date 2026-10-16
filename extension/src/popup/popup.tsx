@@ -1,8 +1,17 @@
 import { Check, ExternalLink, Loader2, LogIn, UserPlus } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { createBookmark, getSession, listTags, type SessionResponse } from '@/lib/api';
+import { useEffect, useRef, useState } from 'react';
+import {
+  createBookmark,
+  findBookmarkByUrl,
+  getSession,
+  listTags,
+  type SavedBookmark,
+  type SessionResponse,
+} from '@/lib/api';
 import { LOGIN_URL, REGISTER_URL, SAVES_URL } from '@/lib/config';
+import { reportSavedState } from '@/lib/messages';
 import { Logo } from './logo';
+import { SavedNotice } from './saved-notice';
 import { TagChipsInput } from './tag-chips-input';
 
 type Status = 'idle' | 'saving' | 'saved' | 'error';
@@ -14,6 +23,9 @@ export function Popup() {
   const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
   const [status, setStatus] = useState<Status>('idle');
   const [errorMsg, setErrorMsg] = useState('');
+  const [savedBookmark, setSavedBookmark] = useState<SavedBookmark | null>(null);
+  // Set once a save succeeds, so a lookup answered from before it can't undo it.
+  const savedHereRef = useRef(false);
 
   useEffect(() => {
     void getSession().then((s) => {
@@ -22,6 +34,22 @@ export function Popup() {
     });
     chrome.tabs.query({ active: true, currentWindow: true }).then(([t]) => setTab(t ?? null));
   }, []);
+
+  // Is this tab already saved? Asked once the session and URL are known. The UI does
+  // not wait for it, and a failed lookup just shows no notice.
+  const signedIn = Boolean(session?.user);
+  const tabUrl = tab?.url ?? '';
+  useEffect(() => {
+    if (!signedIn || !/^https?:/.test(tabUrl)) return;
+    findBookmarkByUrl(tabUrl).then(
+      (bookmark) => {
+        if (savedHereRef.current) return;
+        setSavedBookmark(bookmark);
+        reportSavedState(tabUrl, bookmark !== null);
+      },
+      () => {},
+    );
+  }, [signedIn, tabUrl]);
 
   if (session === undefined) {
     return (
@@ -45,6 +73,8 @@ export function Popup() {
     setErrorMsg('');
     try {
       await createBookmark({ url, tags });
+      savedHereRef.current = true;
+      reportSavedState(url, true);
       setStatus('saved');
       setTimeout(() => window.close(), 700);
     } catch (err) {
@@ -67,6 +97,8 @@ export function Popup() {
       </header>
 
       <div className="space-y-4 p-4">
+        {savedBookmark && <SavedNotice bookmark={savedBookmark} />}
+
         {/* Like the web app's save panel: Save beside the page, tags below. The tag
             suggestions then open under the field without covering or moving Save. */}
         <div className="flex items-start gap-3">
@@ -84,7 +116,7 @@ export function Popup() {
           >
             {status === 'saving' && <Loader2 className="size-4 animate-spin" />}
             {status === 'saved' && <Check className="size-4" />}
-            {status === 'saved' ? 'Saved' : status === 'saving' ? 'Saving…' : 'Save'}
+            {buttonLabel(status, savedBookmark !== null)}
           </button>
         </div>
 
@@ -112,6 +144,12 @@ export function Popup() {
       </div>
     </Shell>
   );
+}
+
+function buttonLabel(status: Status, alreadySaved: boolean): string {
+  if (status === 'saved') return 'Saved';
+  if (status === 'saving') return 'Saving…';
+  return alreadySaved ? 'Update' : 'Save';
 }
 
 function AuthGate() {
