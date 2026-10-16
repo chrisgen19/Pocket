@@ -17,6 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # The job never pushes. Without this, the token stays in .git/config, where
+          # dependency install scripts (Prisma, msw) could read it.
+          persist-credentials: false
 
       # package.json has no `packageManager` field, so the version is set here. Keep it on
       # the pnpm 11 used locally: the root pnpm-workspace.yaml `allowBuilds` list is
