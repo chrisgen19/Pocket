@@ -1,19 +1,7 @@
 'use client';
 
-import { filterSuggestions } from '@shared/tag-autocomplete';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-const SUGGESTION_LIMIT = 6;
-
-// Exact match first, then prefix matches, so typing "design" never picks "design-systems".
-const rank = (tag: string, q: string) => (tag === q ? 0 : tag.startsWith(q) ? 1 : 2);
-
-/** Suggestions for the typed text, minus tags already chosen, best matches first. */
-export const rankedSuggestions = (suggestions: string[], typed: string, chosen: string[]) =>
-  filterSuggestions(suggestions, typed, chosen.join(','), Number.POSITIVE_INFINITY)
-    .sort((a, b) => rank(a, typed) - rank(b, typed))
-    .slice(0, SUGGESTION_LIMIT);
 
 type TagChipProps = {
   tag: string;
