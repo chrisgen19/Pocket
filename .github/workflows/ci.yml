@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  pull_request:
+
+# A new push to the same PR cancels the run still going for the previous one.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Lint, type-check and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # package.json has no `packageManager` field, so the version is set here. Keep it on
+      # the pnpm 11 used locally: the root pnpm-workspace.yaml `allowBuilds` list is
+      # pnpm 11's format.
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.17.0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          # The extension installs separately, with its own lockfile.
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            extension/pnpm-lock.yaml
+
+      # The root install's postinstall runs `prisma generate`; it needs no database.
+      - name: Install web app dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Before the root tests too: they run the extension's test project, whose files
+      # import the extension's own Vitest.
+      - name: Install extension dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: extension
+
+      - name: Lint (Biome)
+        run: pnpm lint
+
+      - name: Type-check web app
+        run: pnpm exec tsc --noEmit
+
+      - name: Test (web app and extension projects)
+        run: pnpm test
+
+      - name: Type-check extension (includes its tests)
+        run: pnpm typecheck
+        working-directory: extension
+
+      - name: Test extension
+        run: pnpm test
+        working-directory: extension
