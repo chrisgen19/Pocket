@@ -89,7 +89,7 @@ pnpm start                            # serve production build
 pnpm lint                             # biome check: lint + format + import order (read-only)
 pnpm check                            # same checks, applying safe fixes (--write)
 pnpm test                             # Vitest, once: web (tests/**) + extension (extension/tests/**)
-pnpm exec vitest run --project extension  # only the extension's tests
+pnpm exec vitest run --project extension  # only the extension's tests (or `cd extension && pnpm test`)
 pnpm test:watch                       # Vitest in watch mode
 pnpm dlx shadcn@latest add <name>     # add a shadcn component
 ```
@@ -145,7 +145,7 @@ When the API arrives, the Zustand store in `src/features/saves/store.ts` should 
 `extension/` holds the MV3 Chrome extension (Vite + `@crxjs/vite-plugin`, React 19, Tailwind v4, Zod). It saves the active tab to Pocket. See `extension/README.md` for full setup.
 
 - **Installs separately:** not a pnpm workspace member (`pnpm-workspace.yaml` lists only `.`) and has its own `pnpm-lock.yaml` and `extension/pnpm-workspace.yaml`. That file makes `extension/` its own workspace root (otherwise pnpm 11 walks up and installs the web app instead) and holds its `allowBuilds` list (esbuild); add any new dependency with a build script there. Excluded from the root `tsconfig.json`, so root `tsc` does not check it. Work inside the folder: `cd extension && pnpm install`, then `pnpm dev` / `pnpm build` / `pnpm typecheck`.
-- **Tests:** `extension/tests/**/*.test.ts`, run from the repo root by `pnpm test` with the root's Vitest (no Vitest in the extension's own deps). `extension/vitest.config.ts` is its project config (listed in the root `vitest.config.ts` under `test.projects`) and maps `@/` to `extension/src`. `chrome.*` is faked per test with `vi.stubGlobal`. Neither tsconfig includes `extension/tests`, and Vitest strips types without checking them, so type errors there go uncaught unless you type-check those files yourself.
+- **Tests:** `extension/tests/**/*.test.ts`. Run with `cd extension && pnpm test` (the extension's own Vitest devDependency), and also by the repo root's `pnpm test`, which lists `extension/vitest.config.ts` under `test.projects`. That config maps `@/` to `extension/src`. `chrome.*` is faked per test with `vi.stubGlobal`. The extension tsconfig includes `tests/` and `vitest.config.ts`, so `pnpm typecheck` (and `pnpm build`) type-checks them. Keep the extension's `vitest` version equal to the root's: the root run loads test files that import the extension's copy.
 - **Config:** `extension/.env` (gitignored, copy from `.env.example`) sets `VITE_API_BASE_URL` to the web app origin.
 - **Styling:** `extension/src/popup/popup.css` imports `shared/tokens.css` (same palette and dark mode as the web app) and self-hosts the two fonts from `extension/public/fonts/` (Latin subsets of the variable fonts, OFL licenses alongside). Keep the popup on semantic classes like the web app.
 - **Auth:** reuses the web app's Better Auth cookie session via `GET /api/auth/get-session`.
