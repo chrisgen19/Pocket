@@ -31,7 +31,17 @@ export default defineManifest({
     type: 'module',
   },
   // tabs: read each tab's URL as it navigates, to mark saved pages on the icon.
-  permissions: ['activeTab', 'alarms', 'contextMenus', 'cookies', 'storage', 'tabs'],
+  // unlimitedStorage (no install warning): lifts storage.local's 10 MB quota, which a
+  // large account's saved-URL cache could pass.
+  permissions: [
+    'activeTab',
+    'alarms',
+    'contextMenus',
+    'cookies',
+    'storage',
+    'tabs',
+    'unlimitedStorage',
+  ],
   host_permissions: [apiHostPattern],
   commands: {
     'save-current-tab': {

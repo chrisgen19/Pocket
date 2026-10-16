@@ -55,6 +55,10 @@ pnpm build      # produces a static ./dist, no dev-server dependency
 
 Reload the extension in `chrome://extensions` (↻ on the card) after each rebuild. Run `pnpm build` again any time you change extension source.
 
+## Tests
+
+Run from the **repo root**: `pnpm test` runs the web app's and the extension's tests, `pnpm exec vitest run --project extension` only these. They use the root's Vitest, so this folder needs no extra dependency; `vitest.config.ts` here is the extension's project config (aliases match `tsconfig.json`). Tests live in `tests/` and fake the `chrome.*` APIs they touch.
+
 ## Features (v1)
 - Click icon → popup with current tab URL/title, tag input, **Save to Pocket**
 - Right-click page → **Save page to Pocket**
@@ -65,7 +69,7 @@ Reload the extension in `chrome://extensions` (↻ on the card) after each rebui
 
 ## Saved indicator
 - Needs the `tabs` permission (Chrome shows "Read your browsing history" at install) to read each tab's URL as it navigates. Adding it to a published build disables the extension for existing users until they accept.
-- The toolbar check never sends visited URLs to the server: the service worker caches the account's saved URLs (`GET /api/bookmarks/urls`) in `chrome.storage.local` and matches exactly, the same rule as the server's unique `(userId, url)` key.
+- The toolbar check never sends visited URLs to the server: the service worker caches the account's saved URLs (`GET /api/bookmarks/urls`) in `chrome.storage.local` (`unlimitedStorage`, no install warning, so a large account can't hit the 10 MB quota) and matches exactly, the same rule as the server's unique `(userId, url)` key. A failed storage write never fails a save: the worker keeps the list in memory and the next refresh writes it again.
 - The cache refreshes on install/startup, every 15 minutes (`chrome.alarms`), on sign-in/out (session cookie change) and after any save from the extension. Opening the popup does send that one tab's URL (`GET /api/bookmarks?url=`) to show its details, and corrects the cache. Signing out clears the cache right away, even when the server is unreachable.
 
 ## Follow-ups

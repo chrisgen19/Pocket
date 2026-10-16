@@ -33,9 +33,16 @@ const readUrls = async (): Promise<Set<string>> => {
   return memo;
 };
 
+// Never throws: a failed write (storage full or unavailable) must not turn a
+// successful save into an error badge or skip the icon updates after a refresh.
+// The memo stays right until the worker stops, and the next refresh writes again.
 const writeUrls = async (urls: Set<string>): Promise<void> => {
   memo = urls;
-  await chrome.storage.local.set({ [STORAGE_KEY]: [...urls] });
+  try {
+    await chrome.storage.local.set({ [STORAGE_KEY]: [...urls] });
+  } catch {
+    // Keep serving from the memo.
+  }
 };
 
 // Cache changes run one at a time, so a read-modify-write can't drop another's change.
