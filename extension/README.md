@@ -65,8 +65,8 @@ Reload the extension in `chrome://extensions` (↻ on the card) after each rebui
 
 ## Saved indicator
 - Needs the `tabs` permission (Chrome shows "Read your browsing history" at install) to read each tab's URL as it navigates. Adding it to a published build disables the extension for existing users until they accept.
-- Visited URLs never leave the browser: the service worker caches the account's saved URLs (`GET /api/bookmarks/urls`) in `chrome.storage.local` and matches exactly, the same rule as the server's unique `(userId, url)` key.
-- The cache refreshes on install/startup, every 15 minutes (`chrome.alarms`), on sign-in/out (session cookie change) and after any save from the extension. Opening the popup asks the server about that one URL (`GET /api/bookmarks?url=`) and corrects the cache.
+- The toolbar check never sends visited URLs to the server: the service worker caches the account's saved URLs (`GET /api/bookmarks/urls`) in `chrome.storage.local` and matches exactly, the same rule as the server's unique `(userId, url)` key.
+- The cache refreshes on install/startup, every 15 minutes (`chrome.alarms`), on sign-in/out (session cookie change) and after any save from the extension. Opening the popup does send that one tab's URL (`GET /api/bookmarks?url=`) to show its details, and corrects the cache. Signing out clears the cache right away, even when the server is unreachable.
 
 ## Follow-ups
 - Options page (default tags, custom shortcut)

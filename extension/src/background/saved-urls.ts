@@ -38,30 +38,64 @@ const writeUrls = async (urls: Set<string>): Promise<void> => {
   await chrome.storage.local.set({ [STORAGE_KEY]: [...urls] });
 };
 
+// Cache changes run one at a time, so a read-modify-write can't drop another's change.
+let queue: Promise<unknown> = Promise.resolve();
+const exclusive = <T>(change: () => Promise<T>): Promise<T> => {
+  const run = queue.then(change, change);
+  queue = run.catch(() => {});
+  return run;
+};
+
+// Only the newest refresh may write: an older response (e.g. from before an account
+// switch) is dropped. Saves made while a refresh is in flight are recorded here and
+// applied on top of its result, since the server list may predate them.
+let latestRefresh = 0;
+const editsDuringRefresh = new Set<Map<string, boolean>>();
+
 /**
  * Replaces the cache with the server's list, or empties it when signed out. A
  * network or server error keeps the current cache until the next refresh.
  */
 export const refreshSavedUrls = async (): Promise<void> => {
+  const refresh = ++latestRefresh;
+  const edits = new Map<string, boolean>();
+  editsDuringRefresh.add(edits);
+  let urls: string[] | null;
   try {
-    const urls = await listSavedUrls();
-    await writeUrls(new Set(urls ?? []));
+    urls = await listSavedUrls();
   } catch {
     // Offline or server error: keep the last known list.
+    editsDuringRefresh.delete(edits);
+    return;
   }
+  await exclusive(async () => {
+    editsDuringRefresh.delete(edits);
+    if (refresh !== latestRefresh) return;
+    const next = new Set(urls ?? []);
+    if (urls) for (const [url, saved] of edits) saved ? next.add(url) : next.delete(url);
+    await writeUrls(next);
+  });
+};
+
+/** Empties the cache now (sign-out) and drops any refresh still in flight. */
+export const clearSavedUrls = (): Promise<void> => {
+  latestRefresh++;
+  return exclusive(() => writeUrls(new Set()));
 };
 
 export const isSaved = async (url: string): Promise<boolean> => (await readUrls()).has(url);
 
 /** Records one URL as saved (or not), e.g. after a save or the popup's lookup. */
-export const setSaved = async (url: string, saved: boolean): Promise<void> => {
-  const urls = await readUrls();
-  if (urls.has(url) === saved) return;
-  const next = new Set(urls);
-  if (saved) next.add(url);
-  else next.delete(url);
-  await writeUrls(next);
-};
+export const setSaved = (url: string, saved: boolean): Promise<void> =>
+  exclusive(async () => {
+    for (const edits of editsDuringRefresh) edits.set(url, saved);
+    const urls = await readUrls();
+    if (urls.has(url) === saved) return;
+    const next = new Set(urls);
+    if (saved) next.add(url);
+    else next.delete(url);
+    await writeUrls(next);
+  });
 
 /** Shows the saved or unsaved icon and tooltip on one tab. */
 export const updateActionForTab = async (tabId: number, url: string | undefined) => {

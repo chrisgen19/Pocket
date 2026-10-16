@@ -2,7 +2,13 @@
 import { createBookmark, getSession } from '@/lib/api';
 import { API_BASE_URL, LOGIN_URL } from '@/lib/config';
 import { isSavedStateMessage } from '@/lib/messages';
-import { refreshSavedUrls, setSaved, updateActionForTab, updateAllTabs } from './saved-urls';
+import {
+  clearSavedUrls,
+  refreshSavedUrls,
+  setSaved,
+  updateActionForTab,
+  updateAllTabs,
+} from './saved-urls';
 
 const CONTEXT_MENU_PAGE = 'pocket-save-page';
 const CONTEXT_MENU_LINK = 'pocket-save-link';
@@ -39,11 +45,13 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 
 // Sign-in and sign-out change the Better Auth session cookie on the API origin.
 // A session refresh overwrites it (removed, then set), so skip the removal half.
+// A real removal (sign-out, expiry) clears the cache without asking the server, so
+// the previous account's saves don't stay marked while the API is unreachable.
 chrome.cookies.onChanged.addListener(async ({ cookie, removed, cause }) => {
   if (!cookie.name.endsWith('better-auth.session_token')) return;
   if (!API_HOST.endsWith(cookie.domain.replace(/^\./, ''))) return;
   if (removed && cause === 'overwrite') return;
-  await refreshSavedUrls();
+  await (removed ? clearSavedUrls() : refreshSavedUrls());
   await updateAllTabs();
 });
 

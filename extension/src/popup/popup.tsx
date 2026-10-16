@@ -1,5 +1,5 @@
 import { Check, ExternalLink, Loader2, LogIn, UserPlus } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   createBookmark,
   findBookmarkByUrl,
@@ -24,6 +24,8 @@ export function Popup() {
   const [status, setStatus] = useState<Status>('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const [savedBookmark, setSavedBookmark] = useState<SavedBookmark | null>(null);
+  // Set once a save succeeds, so a lookup answered from before it can't undo it.
+  const savedHereRef = useRef(false);
 
   useEffect(() => {
     void getSession().then((s) => {
@@ -41,6 +43,7 @@ export function Popup() {
     if (!signedIn || !/^https?:/.test(tabUrl)) return;
     findBookmarkByUrl(tabUrl).then(
       (bookmark) => {
+        if (savedHereRef.current) return;
         setSavedBookmark(bookmark);
         reportSavedState(tabUrl, bookmark !== null);
       },
@@ -70,6 +73,7 @@ export function Popup() {
     setErrorMsg('');
     try {
       await createBookmark({ url, tags });
+      savedHereRef.current = true;
       reportSavedState(url, true);
       setStatus('saved');
       setTimeout(() => window.close(), 700);
