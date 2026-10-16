@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- The ribbon from icon.svg, outlined and without the red tile: the toolbar icon
+       on pages that are not saved yet. Mid-gray reads on light and dark toolbars. -->
+  <path
+    transform="translate(-16 -21) scale(1.25)"
+    d="M40 28 h48 a8 8 0 0 1 8 8 v68 a4 4 0 0 1 -6.4 3.2 L64 86 l-25.6 21.2 A4 4 0 0 1 32 104 V36 a8 8 0 0 1 8 -8 z"
+    fill="none"
+    stroke="#80868f"
+    stroke-width="10"
+    stroke-linejoin="round"
+  />
+</svg>

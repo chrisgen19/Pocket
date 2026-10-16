@@ -12,11 +12,12 @@ export default defineManifest({
   action: {
     default_title: 'Save to Pocket',
     default_popup: 'src/popup/index.html',
+    // The "not saved" look; the service worker swaps in the red icon on saved pages.
     default_icon: {
-      '16': 'public/icons/icon-16.png',
-      '32': 'public/icons/icon-32.png',
-      '48': 'public/icons/icon-48.png',
-      '128': 'public/icons/icon-128.png',
+      '16': 'public/icons/icon-unsaved-16.png',
+      '32': 'public/icons/icon-unsaved-32.png',
+      '48': 'public/icons/icon-unsaved-48.png',
+      '128': 'public/icons/icon-unsaved-128.png',
     },
   },
   icons: {
@@ -29,7 +30,8 @@ export default defineManifest({
     service_worker: 'src/background/service-worker.ts',
     type: 'module',
   },
-  permissions: ['activeTab', 'contextMenus', 'storage', 'cookies'],
+  // tabs: read each tab's URL as it navigates, to mark saved pages on the icon.
+  permissions: ['activeTab', 'alarms', 'contextMenus', 'cookies', 'storage', 'tabs'],
   host_permissions: [apiHostPattern],
   commands: {
     'save-current-tab': {
