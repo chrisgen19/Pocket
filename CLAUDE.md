@@ -79,6 +79,7 @@ pocket/
 - Conventional Commits (`feat:`, `fix:`, `chore:`, `refactor:`, …).
 - Branches: `feature/*`, `bugfix/*`, `hotfix/*`. Never commit to `main`.
 - Run `pnpm lint` and `pnpm exec tsc --noEmit` before declaring work done.
+- CI (`.github/workflows/ci.yml`) runs on every PR: `pnpm lint`, `tsc`, `pnpm test`, then the extension's `pnpm typecheck` and `pnpm test`. It needs no secrets or database (`prisma generate` runs without `DATABASE_URL`). pnpm is pinned there (no `packageManager` field); bump it with the local pnpm.
 
 ## Scripts
 
@@ -194,6 +195,7 @@ Personal API keys let clients that can't carry the session cookie (the iPhone "S
 ### Quality / DX
 - [ ] Remove ESLint + `eslint-config-next` from `devDependencies` (Biome is the linter)
 - [x] Add `pnpm test` (Vitest): `vitest.config.ts` mirrors the `@/` and `@shared/` aliases; tests live in `tests/`, Node environment. The extension is a second project (`extension/vitest.config.ts`, tests in `extension/tests/`)
+- [x] CI on every PR (`.github/workflows/ci.yml`): lint, type-checks, unit tests for the web app and the extension
 - [ ] Consider Playwright for auth + save flow e2e
 
 ### Open product questions
