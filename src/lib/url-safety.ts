@@ -53,8 +53,16 @@ function isPrivateIPv6(ip: string): boolean {
     return true; // link-local fe80::/10
   }
   if (lower.startsWith('ff')) return true; // multicast
+  // IPv4-mapped (::ffff:0:0/96) connects to the embedded IPv4 address. DNS returns it
+  // dotted (::ffff:127.0.0.1), the URL parser rewrites it as hex (::ffff:7f00:1).
   const v4Mapped = lower.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
   if (v4Mapped) return isPrivateIPv4(v4Mapped[1]);
+  const v4MappedHex = lower.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+  if (v4MappedHex) {
+    const high = Number.parseInt(v4MappedHex[1], 16);
+    const low = Number.parseInt(v4MappedHex[2], 16);
+    return isPrivateIPv4(`${high >> 8}.${high & 0xff}.${low >> 8}.${low & 0xff}`);
+  }
   return false;
 }
 
